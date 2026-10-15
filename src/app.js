@@ -33,7 +33,10 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 /* ===================== Estado ===================== */
 const DAY = 86400000;
 const BOX_DAYS = [0, 1, 3, 7, 14];
-const state = { packs: [], packId: null, prog: {}, runId: 0, caps: { sample: undefined, downloads: undefined } };
+const state = { packs: [], packId: null, prog: {}, runId: 0, caps: { sample: undefined, downloads: undefined }, capsReady: null };
+// Juego en curso: al salir a cualquier otra pantalla se retira su escucha de teclado (si no, las teclas seguían respondiendo a la ronda abandonada).
+let activeShell = null;
+function leaveGame() { if (activeShell) { const s = activeShell; activeShell = null; s.destroy(); } }
 
 function normalizePack(raw) {
   if (!raw || typeof raw !== 'object') return null;
@@ -118,10 +121,11 @@ function pick(items, n) {
 function allItems(p = pack()) { return [...p.concepts, ...p.questions, ...p.tf, ...p.cloze, ...p.sort, ...p.order, ...p.explain]; }
 function mastery(items) { if (!items.length) return 0; let s = 0; for (const it of items) { const r = state.prog[it.id]; s += r ? r.box / 4 : 0; } return s / items.length; }
 function dueCount(items) { const now = Date.now(); return items.filter(it => { const r = state.prog[it.id]; return r && r.seen && r.due <= now; }).length; }
-function markDay() { const d = new Date().toISOString().slice(0, 10); const days = LS.get('ra.days', []); if (!days.includes(d)) { days.push(d); LS.set('ra.days', days.slice(-400)); } }
+const dayKey = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+function markDay() { const d = dayKey(new Date()); const days = LS.get('ra.days', []); if (!days.includes(d)) { days.push(d); LS.set('ra.days', days.slice(-400)); } }
 function dayStreak() {
   const days = new Set(LS.get('ra.days', [])); let n = 0; const d = new Date();
-  for (; ;) { const k = d.toISOString().slice(0, 10); if (days.has(k)) { n++; d.setDate(d.getDate() - 1); } else break; }
+  for (; ;) { const k = dayKey(d); if (days.has(k)) { n++; d.setDate(d.getDate() - 1); } else break; }
   return n;
 }
 function bestKey(game) { return 'ra.best.' + state.packId + '.' + game; }
@@ -141,13 +145,13 @@ const GAME_DEFS = [
   { key: 'cloze', name: 'Completa el hueco', desc: 'Escribe la palabra que falta sin ver opciones. Hay pistas si te atascas.', principle: 'Efecto de generación', needs: p => p.cloze.length >= 3 },
   { key: 'tf', name: 'Verdadero o falso', desc: 'Afirmaciones con trampa. Lo importante es el porqué que aparece después.', principle: 'Recuperación con feedback', needs: p => p.tf.length >= 4 },
   { key: 'match', name: 'Empareja', desc: 'Une cada término con su definición. Conceptos parecidos aparecen juntos a propósito.', principle: 'Discriminación e intercalado', needs: p => p.concepts.length >= 4 },
-  { key: 'sort', name: 'Clasifica', desc: 'Decide a qué categoría pertenece cada frase: IMAP o POP3, cita o tarea...', principle: 'Intercalado de categorías', needs: p => p.sort.length >= 1 },
+  { key: 'sort', name: 'Clasifica', desc: 'Decide a qué categoría pertenece cada frase entre dos o tres que se confunden.', principle: 'Intercalado de categorías', needs: p => p.sort.length >= 1 },
   { key: 'order', name: 'Ordena los pasos', desc: 'Reconstruye el orden de los casos prácticos tocando los pasos en secuencia.', principle: 'Conocimiento procedimental', needs: p => p.order.length >= 1 },
   { key: 'cards', name: 'Tarjetas', desc: 'Recuerda la definición antes de girar la tarjeta. Las que fallas vuelven antes.', principle: 'Repaso espaciado', needs: p => p.concepts.length >= 3 },
   { key: 'explain', name: 'Explícalo', desc: 'Responde a un porqué con tus palabras y compáralo con la respuesta modelo.', principle: 'Interrogación elaborativa', needs: p => p.explain.length >= 1 }
 ];
 function renderHome() {
-  state.runId++; const p = pack(); const view = $('#view'); view.replaceChildren();
+  state.runId++; leaveGame(); const p = pack(); const view = $('#view'); view.replaceChildren();
   const items = allItems(p); const m = Math.round(mastery(items) * 100); const due = dueCount(items); const streak = dayStreak();
   const seen = items.filter(it => state.prog[it.id] && state.prog[it.id].seen).length;
   view.append(el('section', { class: 'hero' },
@@ -229,8 +233,9 @@ function buildShell(title, total) {
     hideFeedback() { fb.className = 'fb'; },
     next() { return new Promise(r => { nextResolve = r; }); },
     setKeys(fn) { keys = fn; },
-    destroy() { document.removeEventListener('keydown', onKey); }
+    destroy() { document.removeEventListener('keydown', onKey); keys = null; nextResolve = null; if (activeShell === shell) activeShell = null; }
   };
+  leaveGame(); activeShell = shell;
   return shell;
 }
 async function runRounds(def) {
@@ -307,7 +312,7 @@ function mcRound(q) {
         });
         btns.push(b); list.append(b);
       });
-      body.append(list, el('p', { class: 'small muted', text: 'Atajo: pulsa 1-' + opts.length + ' para responder.' }));
+      body.append(list, el('p', { class: 'small muted kbHint', text: 'Atajo: pulsa 1-' + opts.length + ' para responder.' }));
       shell.setKeys(e => { const n = parseInt(e.key, 10); if (n >= 1 && n <= btns.length && !btns[0].disabled) btns[n - 1].click(); });
     })
   };
@@ -327,7 +332,7 @@ function tfRound(t) {
         });
         btns.push(b); list.append(b);
       });
-      body.append(list, el('p', { class: 'small muted', text: 'Atajo: V o F.' }));
+      body.append(list, el('p', { class: 'small muted kbHint', text: 'Atajo: V o F.' }));
       shell.setKeys(e => { const k = e.key.toLowerCase(); if (btns[0].disabled) return; if (k === 'v' || k === '1') btns[0].click(); if (k === 'f' || k === '2') btns[1].click(); });
     })
   };
@@ -488,7 +493,7 @@ function runCards() {
   const next = () => {
     if (guard()) return;
     if (i >= deck.length) {
-      shell.destroy(); LS.set(bestKey('cards'), known + '/' + deck.length);
+      shell.destroy(); const prevBest = LS.get(bestKey('cards'), null); if (!prevBest || known > parseInt(prevBest, 10)) LS.set(bestKey('cards'), known + '/' + deck.length);
       const view2 = $('#view'); view2.replaceChildren();
       const dueNow = dueCount(p.concepts);
       view2.append(el('section', { class: 'shell' }, el('div', { class: 'shell-head' }, el('div', { class: 't', text: 'Tarjetas · resultado' })),
@@ -510,7 +515,7 @@ function runCards() {
     rate.append(mk('No la sabía', 'vuelve enseguida', 'ko', false), mk('Casi', 'me faltaba algo', '', 'partial'), mk('La sabía', 'sube de caja', 'ok', true));
     flip.addEventListener('click', () => { card.classList.add('flipped'); card.replaceChildren(el('div', { class: 'face' }, el('div', { class: 'eyebrow', text: reverse ? k.term : 'Definición' }), el('div', { class: reverse ? 'big' : 'ans', text: reverse ? k.term : k.def }))); flip.hidden = true; rate.hidden = false; });
     shell.setKeys(e => { if (e.key === ' ' || e.key === 'Enter') { if (!flip.hidden) { e.preventDefault(); flip.click(); } } else if (!rate.hidden) { const n = parseInt(e.key, 10); const bs = rate.querySelectorAll('button'); if (n >= 1 && n <= 3) bs[n - 1].click(); } });
-    shell.body.append(el('div', { class: 'row between' }, el('span', { class: 'eyebrow', text: secName(k.sec) }), boxes), el('div', { class: 'flash' }, card), el('div', { class: 'row' }, flip), rate, el('p', { class: 'small muted', text: 'Intenta recordarlo de verdad antes de mostrar la respuesta: ese esfuerzo es lo que fija la memoria. Atajos: espacio para girar, 1-3 para valorar.' }));
+    shell.body.append(el('div', { class: 'row between' }, el('span', { class: 'eyebrow', text: secName(k.sec) }), boxes), el('div', { class: 'flash' }, card), el('div', { class: 'row' }, flip), rate, el('p', { class: 'small muted' }, 'Intenta recordarlo de verdad antes de mostrar la respuesta: ese esfuerzo es lo que fija la memoria. ', el('span', { class: 'kbHint', text: 'Atajos: espacio para girar, 1-3 para valorar.' })));
   };
   next();
 }
@@ -579,7 +584,7 @@ function confetti() {
 
 /* ===================== Por qué estos juegos ===================== */
 function renderWhy() {
-  state.runId++; const view = $('#view'); view.replaceChildren();
+  state.runId++; leaveGame(); const view = $('#view'); view.replaceChildren();
   const link = (href, text) => el('a', { href, target: '_blank', rel: 'noopener' }, text);
   const P = (g, title, body) => el('div', { class: 'principle' }, el('div', { class: 'g', text: g }), el('h3', { text: title }), el('p', { text: body }));
   view.append(el('div', { class: 'prose' },
@@ -616,7 +621,7 @@ function renderWhy() {
 
 /* ===================== Gestionar temas ===================== */
 function renderPacks() {
-  state.runId++; const view = $('#view'); view.replaceChildren();
+  state.runId++; leaveGame(); const view = $('#view'); view.replaceChildren();
   const list = el('div', { class: 'stack' });
   for (const p of state.packs) {
     const counts = p.questions.length + ' test · ' + p.tf.length + ' V/F · ' + p.cloze.length + ' huecos · ' + p.concepts.length + ' conceptos · ' + p.sort.length + ' clasif. · ' + p.order.length + ' secuencias · ' + p.explain.length + ' porqués';
@@ -654,7 +659,7 @@ const GEN_SIZES = {
 };
 const MAX_TEXT = 110000;
 function renderAdd() {
-  state.runId++; const view = $('#view'); view.replaceChildren();
+  state.runId++; leaveGame(); const view = $('#view'); view.replaceChildren();
   const st = { mode: 'pdf', text: '', title: '', method: state.caps.sample ? 'claude' : 'auto', size: 'm', json: null };
   const log = el('div', { class: 'log' }); const preview = el('div', { class: 'preview', hidden: true });
   const titleInput = el('input', { class: 'text', type: 'text', placeholder: 'Título del tema (por ejemplo: Tema 3. Hojas de cálculo)', id: 'packTitle', 'aria-label': 'Título del tema' });
@@ -706,11 +711,14 @@ function renderAdd() {
   renderSource();
   // Paso 2: método y tamaño
   const radios = el('div', { class: 'radios' });
-  const mkRadio = (val, title, desc, enabled) => { const r = el('input', { type: 'radio', name: 'method', value: val, id: 'method-' + val, checked: st.method === val, disabled: !enabled }); const lab = el('label', { class: 'radio' + (st.method === val ? ' on' : '') + (enabled ? '' : ' off'), for: 'method-' + val }, r, el('div', {}, el('b', { text: title }), el('span', { text: desc }))); r.addEventListener('change', () => { st.method = val; radios.querySelectorAll('.radio').forEach(x => x.classList.remove('on')); lab.classList.add('on'); }); return lab; };
-  radios.append(
+  const mkRadio = (val, title, desc, enabled) => { const r = el('input', { type: 'radio', name: 'method', value: val, id: 'method-' + val, checked: st.method === val, disabled: !enabled }); const lab = el('label', { class: 'radio' + (st.method === val ? ' on' : '') + (enabled ? '' : ' off'), for: 'method-' + val }, r, el('div', {}, el('b', { text: title }), el('span', { text: desc }))); r.addEventListener('change', () => { st.method = val; st.picked = true; radios.querySelectorAll('.radio').forEach(x => x.classList.remove('on')); lab.classList.add('on'); }); return lab; };
+  const buildRadios = () => radios.replaceChildren(
     mkRadio('claude', 'Con Claude (recomendado)', state.caps.sample ? 'Claude lee el texto y redacta preguntas, definiciones, verdadero/falso, huecos, clasificaciones, secuencias y porqués en español. Tarda uno o dos minutos y usa tu cuenta de Claude; la primera vez te pedirá permiso.' : 'No disponible en esta vista: abre la página desde claude.ai para usarlo. Mientras tanto, usa el modo automático.', !!state.caps.sample),
     mkRadio('auto', 'Automático sin Claude', 'Extrae del texto definiciones («Término: definición»), pasos numerados y frases clave para montar los juegos. Es instantáneo pero más básico.', true)
   );
+  buildRadios();
+  // Si la pantalla se abrió antes de que la capacidad de Claude estuviera resuelta, se activa la opción en cuanto llega.
+  if (state.caps.sample === undefined && state.capsReady) state.capsReady.then(() => { if (state.caps.sample && document.contains(radios) && !st.picked) { st.method = 'claude'; buildRadios(); } });
   const sizes = el('div', { class: 'sizes' });
   Object.entries(GEN_SIZES).forEach(([k, v]) => { const b = el('button', { class: 'btn small' + (st.size === k ? ' on' : ''), type: 'button', text: v.label }); b.addEventListener('click', () => { st.size = k; sizes.querySelectorAll('.btn').forEach(x => x.classList.remove('on')); b.classList.add('on'); }); sizes.append(b); });
   const go = el('button', { class: 'btn primary big', type: 'button', text: 'Crear los juegos' });
@@ -851,7 +859,7 @@ function heuristicPack(text, title, sizeKey) {
   // Clasifica: fragmentos de definiciones de 2-3 conceptos de la misma sección
   const sort = [];
   const bySec = new Map(); chosen.forEach(k => { if (!bySec.has(k.sec)) bySec.set(k.sec, []); bySec.get(k.sec).push(k); });
-  for (const [sec, ks] of bySec) { if (sort.length >= S.sort) break; const cats = ks.filter(k => k.def.split(/[,;]| y /).length >= 2).slice(0, 3); if (cats.length < 2) continue; const items = []; cats.forEach((k, ci) => { k.def.replace(/^[^ ]+ (es|son) /, '').split(/[,;.]| y /).map(s => s.trim()).filter(s => s.length >= 15 && s.length <= 110 && !(/\(/.test(s) && !/\)/.test(s))).slice(0, 4).forEach(t => items.push({ t: cap(t), c: ci })); }); if (items.length >= 4) sort.push({ title: '¿' + cats.map(c => c.term).join(' o ') + '?', cats: cats.map(c => c.term), items, sec }); }
+  for (const [sec, ks] of bySec) { if (sort.length >= S.sort) break; const cats = ks.filter(k => k.def.split(/[,;]| y /).length >= 2).slice(0, 3); if (cats.length < 2) continue; const items = []; const seenIt = new Set(); cats.forEach((k, ci) => { k.def.replace(/^[^ ]+ (es|son) /, '').split(/[,;.]| y /).map(s => s.trim()).filter(s => s.length >= 15 && s.length <= 110 && !(/\(/.test(s) && !/\)/.test(s))).slice(0, 4).forEach(t => { const key = norm(t); if (seenIt.has(key)) return; seenIt.add(key); items.push({ t: cap(t), c: ci }); }); }); if (items.length >= 4) sort.push({ title: '¿' + cats.map(c => c.term).join(' o ') + '?', cats: cats.map(c => c.term), items, sec }); }
   // Explícalo
   const explain = sample(chosen, S.e).map(k => ({ q: 'Explica con tus palabras qué es «' + k.term + '» y para qué sirve.', model: k.def, sec: k.sec }));
   return { sections, concepts: chosen.map(k => ({ term: k.term, def: k.def, sec: k.sec })), cloze, questions, tf, sort, order: orderOut, explain };
@@ -879,7 +887,9 @@ function spread(arr, n) { if (arr.length <= n) return arr.slice(); const out = [
 function boot() {
   loadState(); fillPackSelect(); renderHome();
   const useCap = async (name) => { try { if (!window.claude || typeof window.claude.use !== 'function') return null; return await window.claude.use(name); } catch { return null; } };
-  useCap('sample').then(fn => { state.caps.sample = fn || null; });
-  useCap('downloads').then(d => { state.caps.downloads = d || null; });
+  state.capsReady = Promise.all([
+    useCap('sample').then(fn => { state.caps.sample = fn || null; }),
+    useCap('downloads').then(d => { state.caps.downloads = d || null; })
+  ]);
 }
 boot();
