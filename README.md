@@ -33,6 +33,7 @@ Botón **+ Tema** en la página. Admite un PDF (se lee en el navegador con pdf.j
 - `index.html`: la página completa, lista para servir (GitHub Pages).
 - `src/page.html`: estilos y marcado. `src/pack-tema2.js`: banco de contenidos del Tema 2. `src/app.js`: lógica de los juegos.
 - `src/build.sh`: reconstruye `index.html` a partir de los tres ficheros.
+- `.github/workflows/pages.yml`: con cada cambio en `main` copia `index.html` a la rama `gh-pages`, que es la que publica GitHub Pages.
 
 ## Por qué estos juegos
 
