@@ -203,10 +203,11 @@ window.FUN = (function () {
   let root = null;           // contenedor de la pestaña
   let current = null;        // juego en marcha
   // Relación con el repaso espaciado de los juegos de estudio (decisión de Cero, en un solo sitio):
-  //   'none'   → lo que pasa en FUN no toca el repaso (por defecto)
+  //   'all'    → aciertos y fallos cuentan igual que en los juegos de estudio (lo que eligió Cero)
   //   'errors' → solo los fallos de FUN cuentan (el elemento vuelve antes)
-  //   'all'    → aciertos y fallos cuentan igual que en los juegos de estudio
-  const GRADE_MODE = 'none';
+  //   'none'   → lo que pasa en FUN no toca el repaso
+  // Las preguntas que pasan sin respuesta (cápsula que llega abajo, tiempo agotado, topo escapado) no se registran nunca.
+  const GRADE_MODE = 'all';
 
   /* ---------- Utilidades propias (no se redefine nada de app.js) ---------- */
   const fshuffle = (arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -274,6 +275,8 @@ window.FUN = (function () {
     ship: '<path d="M12 3l5 10H7l5-10z"/><path d="M5 17l7 4 7-4"/><path d="M7 13l-2 4M17 13l2 4"/>',
     road: '<path d="M4 20L9 4h6l5 16"/><path d="M12 7v2M12 12v2M12 17v2"/>',
     boss: '<path d="M6 20V9a6 6 0 0 1 12 0v11l-3-2-3 2-3-2-3 2z"/><circle cx="9.5" cy="11" r=".9"/><circle cx="14.5" cy="11" r=".9"/>',
+    stairs: '<path d="M4 20h4v-4h4v-4h4V8h4V4"/><path d="M4 20V4"/>',
+    basket: '<path d="M4 10h16l-2 9H6l-2-9z"/><path d="M8 10l4-6 4 6"/><path d="M9 14v2M12 14v2M15 14v2"/>',
     mole: '<path d="M4 18h16"/><path d="M7 18v-5a5 5 0 0 1 10 0v5"/><circle cx="10" cy="12.5" r=".8"/><circle cx="14" cy="12.5" r=".8"/><path d="M11 15h2"/>',
     sound: '<path d="M4 10v4h3l5 4V6L7 10H4z"/><path d="M16 9a4 4 0 0 1 0 6"/>',
     mute: '<path d="M4 10v4h3l5 4V6L7 10H4z"/><path d="M16 9l5 6M21 9l-5 6"/>',
@@ -668,8 +671,9 @@ window.FUN = (function () {
       this.setMeta((this.round + 1) + '/' + this.queue.length);
       const n = q.options.length; const colW = this.cv.W / n;
       const cols = fshuffle(q.options.map((_, i) => i));
-      this.pods = q.options.map((t, i) => ({ i, x: colW * cols[i] + colW / 2 + rnd(-colW * .12, colW * .12), y: -30 - rnd(0, 50) - i * 16, r: 21, phase: rnd(0, 6.28), dead: false, fade: 1, ok: null }));
-      this.speed = 22 + this.round * 2.5;
+      this.pods = q.options.map((t, i) => ({ i, x: colW * cols[i] + colW / 2 + rnd(-colW * .12, colW * .12), y: -24 - rnd(0, 30) - i * 14, r: 21, phase: rnd(0, 6.28), dead: false, fade: 1, ok: null }));
+      // Tardan unos 15 s en cruzar la pantalla al principio y unos 9 al final, sea cual sea su altura.
+      this.speed = this.cv.H / (15 - Math.min(this.round, 9) * .65);
     }
     shoot() { if (this.state !== 'running' || this.busy || this.cool > 0) return; this.cool = .24; this.bullets.push({ x: this.ship.x, y: this.cv.H - this.ship.h - 18, dead: false }); Snd.shoot(); }
     onKey(e) { if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') this.shoot(); }
@@ -708,7 +712,7 @@ window.FUN = (function () {
       }
     }
     reached() {
-      const q = this.q; this.busy = true; Snd.wrong(); this.fx.shake(8); this.fx.burst(this.ship.x, this.cv.H - 26, this.c.ko, 18); this.markLegend(q.a, null); this.gradeOnce(q.id, false);
+      const q = this.q; this.busy = true; Snd.wrong(); this.fx.shake(8); this.fx.burst(this.ship.x, this.cv.H - 26, this.c.ko, 18); this.markLegend(q.a, null);
       const alive = this.miss({ q: q.prompt, a: q.answer });
       this.feedback({ title: 'Han llegado hasta ti', prompt: q.prompt, answer: LETTERS[q.a] + ' · ' + q.answer, why: q.why }).then(() => { if (!alive) this.end(false); else this.nextRound(); });
     }
@@ -736,6 +740,114 @@ window.FUN = (function () {
     }
   }
   register({ key: 'invaders', name: 'Invasión', icon: 'ship', canvas: true, lives: 3, desc: 'Las respuestas bajan en cápsulas con letra. Dispara a la correcta antes de que lleguen a tu nave.', intro: 'Diez preguntas del tema. Cada respuesta baja dentro de una cápsula con su letra; solo una es la buena. Tienes tres vidas.', needs: p => mcPool(p).length >= 6 }, Invaders);
+  /* ===================== Ascenso: plataformas; cae sobre la letra correcta para seguir subiendo ===================== */
+  class Climb extends Game {
+    setup() {
+      const p = A.pack(); this.pool = mcPool(p);
+      this.queue = A.pick(this.pool, Math.min(10, this.pool.length)).map(dealMc);
+      this.player = { x: 0, y: 0, vx: 0, vy: 0, w: 26, h: 30 }; this.cam = 0; this.round = -1; this.spacing = 150; this.gravity = 1200; this.jump = 730; this.busy = false; this.touchDir = 0; this.rows = []; this.startPlat = null; this.lastSafe = null;
+      this.touchButtons([
+        { icon: 'left', label: 'Izquierda', press: () => this.keys.add('TouchLeft'), release: () => this.keys.delete('TouchLeft') },
+        { icon: 'right', label: 'Derecha', press: () => this.keys.add('TouchRight'), release: () => this.keys.delete('TouchRight') }
+      ]);
+    }
+    howto() { return [{ keys: ['left', 'right'], text: 'Dirige el salto en el aire. Rebotas solo al caer sobre una plataforma, y por un lado de la pantalla se sale y por el otro se entra.' }, { keys: ['A', 'B', 'C'], text: 'Cae en la plataforma con la letra de la respuesta correcta. Las equivocadas se rompen.' }, { keys: ['Esc'], text: 'Pausa.' }]; }
+    start() {
+      const { W, H } = this.cv; const pl = this.player;
+      this.startPlat = { x: W / 2 - 50, y: H - 34, w: 100, neutral: true, row: null, i: -1, broken: false, fade: 1, ok: null };
+      this.rows = this.queue.map((q, i) => {
+        const n = q.options.length; const slot = W / n; const w = Math.min(100, slot - 16); const y = H - 34 - (i + 1) * this.spacing; const order = fshuffle(q.options.map((_, k) => k));
+        const row = { q, i, y, answered: false, plats: [] };
+        row.plats = q.options.map((_, k) => ({ i: k, x: slot * order[k] + (slot - w) / 2 + rnd(-5, 5), y, w, row, broken: false, fade: 1, ok: null }));
+        return row;
+      });
+      this.goalY = H - 34 - (this.queue.length + 1) * this.spacing;
+      pl.x = W / 2; pl.y = this.startPlat.y - pl.h; pl.vy = -this.jump; pl.vx = 0; this.cam = 0; this.lastSafe = this.startPlat; this.round = -1;
+      this.nextRound();
+    }
+    onResize() { /* las plataformas se recolocan proporcionalmente al nuevo ancho */
+      const { W } = this.cv; for (const r of this.rows) { const n = r.q.options.length; const slot = W / n; const w = Math.min(100, slot - 16); r.plats.forEach((p, k) => { const c = (p.x + p.w / 2) / (this.prevW || W); p.x = clamp(c * W - w / 2, 4, W - w - 4); p.w = w; }); }
+      this.startPlat.x = W / 2 - 50; this.prevW = W;
+    }
+    nextRound() {
+      this.round++; if (this.round >= this.queue.length) return this.end(true);
+      const q = this.rows[this.round].q; this.busy = false;
+      this.prompt({ label: q.label || A.secName(q.sec), text: q.prompt, options: q.options });
+      this.setMeta((this.round + 1) + '/' + this.queue.length);
+    }
+    onPointer(ev) { if (ev.type === 'down' || ev.type === 'move') this.touchDir = ev.x < this.cv.W / 2 ? -1 : 1; else if (ev.type === 'up') this.touchDir = 0; }
+    tick(dt) {
+      if (this.busy) return;
+      const { W, H } = this.cv; const pl = this.player; if (!this.prevW) this.prevW = W;
+      let dir = 0; if (this.keys.has('ArrowLeft') || this.keys.has('KeyA') || this.keys.has('TouchLeft')) dir -= 1; if (this.keys.has('ArrowRight') || this.keys.has('KeyD') || this.keys.has('TouchRight')) dir += 1; if (!dir) dir = this.touchDir;
+      pl.vx = lerp(pl.vx, dir * 300, Math.min(1, dt * 10));
+      const prevY = pl.y; pl.vy += this.gravity * dt; pl.x += pl.vx * dt; pl.y += pl.vy * dt;
+      if (pl.x < -pl.w / 2) pl.x += W + pl.w; else if (pl.x > W + pl.w / 2) pl.x -= W + pl.w;
+      if (pl.vy > 0) {
+        const feetPrev = prevY + pl.h, feet = pl.y + pl.h; const cur = this.rows[this.round];
+        const solid = [this.startPlat]; for (const r of this.rows) if (r.answered || r === cur) solid.push(...r.plats);
+        for (const p of solid) { if (p.broken) continue; if (feetPrev <= p.y + 2 && feet >= p.y && pl.x + pl.w * .4 > p.x && pl.x - pl.w * .4 < p.x + p.w) { this.land(p); break; } }
+      }
+      if (pl.y - this.cam < H * .42) this.cam = pl.y - H * .42;
+      if (pl.y - this.cam > H + 30) this.fell();
+      for (const r of this.rows) for (const p of r.plats) if (p.broken && p.fade > 0) p.fade = Math.max(0, p.fade - dt * 2.5);
+    }
+    bounce(p) { const pl = this.player; pl.y = p.y - pl.h; pl.vy = -this.jump; }
+    land(p) {
+      const row = p.row;
+      if (!row || row.answered) { this.bounce(p); Snd.step(); if (!row || row.plats[row.q.a] === p) this.lastSafe = p; return; }
+      const q = row.q;
+      if (p.i === q.a) {
+        row.answered = true; p.ok = true; this.lastSafe = p; this.bounce(p); Snd.hit();
+        this.fx.burst(p.x + p.w / 2, p.y - this.cam, this.c.ok, 12, 120);
+        this.hit(100 + this.round * 5, { x: p.x + p.w / 2, y: p.y - this.cam - 22 }); this.gradeOnce(q.id, true); this.markLegend(q.a, p.i);
+        if (this.round + 1 >= this.queue.length) { this.busy = true; setTimeout(() => this.end(true), 500); } else this.nextRound();
+      } else {
+        p.broken = true; p.ok = false; this.player.vy = 60; Snd.wrong(); this.fx.burst(p.x + p.w / 2, p.y - this.cam, this.c.ko, 12); this.fx.shake(6);
+        this.markLegend(q.a, p.i); this.gradeOnce(q.id, false); this.busy = true;
+        const alive = this.miss({ q: q.prompt, a: q.answer });
+        this.feedback({ title: 'Esa plataforma se rompe', prompt: q.prompt, answer: LETTERS[q.a] + ' · ' + q.answer, why: q.why }).then(() => { if (!alive) return this.end(false); this.respawn(row); });
+      }
+    }
+    // Tras un fallo: la fila queda resuelta y se sigue desde su plataforma correcta.
+    respawn(row) { const good = row.plats[row.q.a]; row.answered = true; good.ok = true; good.broken = false; this.lastSafe = good; const pl = this.player; pl.x = good.x + good.w / 2; pl.vx = 0; this.bounce(good); this.cam = Math.min(this.cam, pl.y - this.cv.H * .55); this.nextRound(); }
+    // Caída al vacío: error de manos, no de conocimiento. Cuesta una vida y se vuelve a la última plataforma segura con la misma pregunta.
+    fell() {
+      this.busy = true; Snd.wrong(); this.fx.shake(6);
+      const alive = this.miss(null, { count: false });
+      if (!alive) return this.end(false);
+      const s = this.lastSafe; const pl = this.player; pl.x = s.x + s.w / 2; pl.vx = 0; this.bounce(s); this.cam = Math.min(this.cam, pl.y - this.cv.H * .55);
+      this.banner('Te has caído', 900); setTimeout(() => { if (this.state === 'running') this.busy = false; }, 500);
+    }
+    draw() {
+      const { ctx, W, H } = this.cv; const c = this.c; const pl = this.player; const cam = this.cam;
+      ctx.save(); ctx.fillStyle = c.surface; ctx.fillRect(0, 0, W, H);
+      const [ox, oy] = this.fx.offset(); ctx.translate(ox, oy);
+      // Marcas de altura cada tramo.
+      ctx.strokeStyle = c.line; ctx.lineWidth = 1; ctx.setLineDash([3, 9]);
+      for (let i = 0; i <= this.queue.length; i++) { const y = this.rows.length ? (H - 34 - i * this.spacing) - cam : 0; if (y < -2 || y > H + 2) continue; ctx.beginPath(); ctx.moveTo(0, Math.round(y) + .5); ctx.lineTo(W, Math.round(y) + .5); ctx.stroke(); }
+      ctx.setLineDash([]);
+      // Meta.
+      const gy = this.goalY - cam; if (gy > -20 && gy < H + 20) { ctx.fillStyle = c.ink2; ctx.font = '600 13px ' + c.fontUi; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText('Meta', W / 2, gy - 6); ctx.fillStyle = c.accent; ctx.fillRect(W / 2 - 40, gy - 3, 80, 3); }
+      const drawPlat = (p, alpha) => {
+        const y = p.y - cam; if (y < -30 || y > H + 30 || (p.broken && p.fade <= 0)) return;
+        ctx.globalAlpha = alpha * (p.broken ? p.fade : 1);
+        roundRect(ctx, p.x, y, p.w, 5, 14);
+        ctx.fillStyle = p.ok === true ? c.okSoft : p.ok === false ? c.koSoft : p.neutral ? c.surface2 : c.surface; ctx.fill();
+        ctx.lineWidth = 1.5; ctx.strokeStyle = p.ok === true ? c.ok : p.ok === false ? c.ko : c.line2; ctx.stroke();
+        if (p.i >= 0) { ctx.fillStyle = p.ok === true ? c.ok : p.ok === false ? c.ko : c.ink; ctx.font = '600 14px ' + c.fontDisplay; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(LETTERS[p.i], p.x + p.w / 2, y + 7.5); }
+        ctx.globalAlpha = 1;
+      };
+      drawPlat(this.startPlat, 1);
+      for (const r of this.rows) { const alpha = r.answered ? .55 : r.i === this.round ? 1 : .3; for (const p of r.plats) drawPlat(p, alpha); }
+      // Jugador: una figura redondeada con dos ojos.
+      const px = pl.x, py = pl.y - cam;
+      roundRect(ctx, px - pl.w / 2, py, pl.w, 9, pl.h); ctx.fillStyle = c.accent; ctx.fill();
+      ctx.fillStyle = c.accentInk; ctx.beginPath(); ctx.arc(px - 5, py + 10, 2.2, 0, Math.PI * 2); ctx.arc(px + 5, py + 10, 2.2, 0, Math.PI * 2); ctx.fill();
+      this.fx.draw(ctx, c.fontUi); ctx.restore();
+    }
+  }
+  register({ key: 'climb', name: 'Ascenso', icon: 'stairs', canvas: true, lives: 3, desc: 'Plataformas con letra. Salta hasta la de la respuesta correcta; las otras se rompen bajo tus pies.', intro: 'Diez pisos, uno por pregunta. Rebotas sin parar: dirige el salto y cae sobre la plataforma de la respuesta correcta para subir al siguiente piso. Tres vidas.', needs: p => mcPool(p).length >= 6 }, Climb);
   /* ===================== Carrera: elige el carril de la categoría correcta ===================== */
   class Runner extends Game {
     setup() {
@@ -827,6 +939,86 @@ window.FUN = (function () {
     }
   }
   register({ key: 'runner', name: 'Carrera', icon: 'road', canvas: true, lives: 3, desc: 'Cada frase pertenece a una categoría. Ponte en el carril correcto antes de llegar a la puerta.', intro: 'La carretera se divide en carriles con nombre. Lee la frase, elige el carril de su categoría y pasa por la puerta. Cuanto más aciertas, más rápido vas.', needs: p => sortSets(p).length >= 1 }, Runner);
+  /* ===================== Lluvia: atrapa la palabra que responde y esquiva las demás ===================== */
+  class Rain extends Game {
+    setup() {
+      const p = A.pack();
+      const ks = p.concepts.filter(k => k.term.length <= 26); const cs = clozePool(p).filter(c => c.answer.length <= 18);
+      const kRounds = ks.length >= 5 ? A.pick(ks, Math.min(7, ks.length)).map(k => ({ id: k.id, label: 'Qué término es', text: k.def, answer: k.term, decoys: fshuffle(ks.filter(x => x.id !== k.id && fnorm(x.term) !== fnorm(k.term))).slice(0, 4).map(x => x.term), why: k.term + ': ' + k.def })) : [];
+      const cRounds = cs.length >= 5 ? A.pick(cs, Math.min(5, cs.length)).map(c => ({ id: c.id, label: 'Qué palabra falta', text: c.text.replace('___', '______'), answer: c.answer, decoys: fshuffle(cs.filter(x => x.id !== c.id && fnorm(x.answer) !== fnorm(c.answer))).slice(0, 4).map(x => x.answer), why: c.hint ? 'Pista: ' + c.hint : '', small: true })) : [];
+      this.rounds = fshuffle([...kRounds, ...cRounds]).slice(0, 10);
+      this.player = { x: 0, w: 60, h: 16, target: null }; this.drops = []; this.round = -1; this.speed = 90; this.busy = false; this.spawnT = 0; this.bag = []; this.roundT = 0; this.r = null;
+      this.touchButtons([
+        { icon: 'left', label: 'Izquierda', press: () => this.keys.add('TouchLeft'), release: () => this.keys.delete('TouchLeft') },
+        { icon: 'right', label: 'Derecha', press: () => this.keys.add('TouchRight'), release: () => this.keys.delete('TouchRight') }
+      ]);
+    }
+    howto() { return [{ keys: ['left', 'right'], text: 'Mueve la cesta. En el móvil, arrastra el dedo o usa los botones.' }, { keys: ['Atrapa'], text: 'Recoge la palabra que responde al enunciado y deja caer las demás. Recoger otra cuesta una vida.' }, { keys: ['Esc'], text: 'Pausa.' }]; }
+    start() { this.player.x = this.cv.W / 2; this.nextRound(); }
+    nextRound() {
+      this.round++; if (this.round >= this.rounds.length) return this.end(true);
+      const r = this.rounds[this.round]; this.r = r; this.busy = false; this.drops = []; this.roundT = 0; this.spawnT = .5;
+      const decoys = r.decoys.slice(); const first = fshuffle([r.answer, ...decoys.splice(0, 2)]);
+      this.bag = [...first, ...fshuffle(decoys)].map(t => ({ t, ok: t === r.answer }));
+      this.prompt({ label: r.label, text: r.text, small: !!r.small }); this.setMeta((this.round + 1) + '/' + this.rounds.length);
+      this.speed = this.cv.H / 5.5 + this.round * 7;
+    }
+    onPointer(ev) { if (ev.type === 'move' || ev.type === 'down') this.player.target = ev.x; }
+    tick(dt) {
+      if (this.busy) return; const { W, H } = this.cv; const pl = this.player;
+      let dir = 0; if (this.keys.has('ArrowLeft') || this.keys.has('KeyA') || this.keys.has('TouchLeft')) dir -= 1; if (this.keys.has('ArrowRight') || this.keys.has('KeyD') || this.keys.has('TouchRight')) dir += 1;
+      if (dir) { pl.x += dir * 380 * dt; pl.target = null; } else if (pl.target != null) { pl.x = lerp(pl.x, pl.target, Math.min(1, dt * 16)); if (Math.abs(pl.x - pl.target) < .5) pl.target = null; }
+      pl.x = clamp(pl.x, pl.w / 2 + 4, W - pl.w / 2 - 4);
+      this.roundT += dt; this.spawnT -= dt;
+      if (this.spawnT <= 0 && this.bag.length) {
+        this.spawnT = Math.max(.7, 1.15 - this.round * .04); const d = this.bag.shift();
+        this.cv.ctx.font = '600 14px ' + this.c.fontUi; const w = Math.min(W - 24, Math.ceil(this.cv.ctx.measureText(d.t).width) + 24);
+        this.drops.push({ t: d.t, ok: d.ok, w, h: 30, x: rnd(12 + w / 2, W - 12 - w / 2), y: -34, vy: this.speed * rnd(.9, 1.15), done: false, fade: 1, caught: null });
+      }
+      const py = H - 30;
+      for (const d of this.drops) {
+        if (d.done) { d.fade = Math.max(0, d.fade - dt * 3); continue; }
+        d.y += d.vy * dt;
+        if (d.y + d.h / 2 >= py - pl.h / 2 && d.y - d.h / 2 <= py + pl.h && Math.abs(d.x - pl.x) < (pl.w + d.w) / 2 * .75) { this.catchDrop(d); if (this.busy) return; }
+        else if (d.y - d.h / 2 > H) { d.done = true; d.fade = 0; if (d.ok) { this.escaped(); return; } }
+      }
+    }
+    catchDrop(d) {
+      const r = this.r; d.done = true; d.caught = d.ok;
+      if (d.ok) {
+        Snd.hit(); this.fx.burst(d.x, d.y, this.c.ok, 14); this.hit(100 + Math.max(0, Math.round(40 - this.roundT * 5)), { x: d.x, y: d.y - 16 }); this.gradeOnce(r.id, true); this.busy = true;
+        for (const o of this.drops) if (!o.done) { o.done = true; o.fade = .6; }
+        setTimeout(() => { if (this.state === 'running') this.nextRound(); }, 550);
+      } else {
+        Snd.wrong(); this.fx.burst(d.x, d.y, this.c.ko, 12); this.fx.shake(6); this.gradeOnce(r.id, false); this.busy = true;
+        const alive = this.miss({ q: r.text, a: r.answer });
+        this.feedback({ title: 'Esa no era', prompt: r.text, answer: r.answer, why: r.why }).then(() => { if (!alive) this.end(false); else this.nextRound(); });
+      }
+    }
+    escaped() {
+      const r = this.r; this.busy = true; Snd.wrong(); this.fx.shake(4);
+      const alive = this.miss({ q: r.text, a: r.answer });
+      this.feedback({ title: 'Se te ha escapado', prompt: r.text, answer: r.answer, why: r.why }).then(() => { if (!alive) this.end(false); else this.nextRound(); });
+    }
+    draw() {
+      const { ctx, W, H } = this.cv; const c = this.c; const pl = this.player;
+      ctx.save(); ctx.fillStyle = c.surface; ctx.fillRect(0, 0, W, H);
+      const [ox, oy] = this.fx.offset(); ctx.translate(ox, oy);
+      ctx.strokeStyle = c.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, H - 12.5); ctx.lineTo(W, H - 12.5); ctx.stroke();
+      for (const d of this.drops) {
+        if (d.done && d.fade <= 0) continue; ctx.globalAlpha = d.done ? d.fade : 1;
+        roundRect(ctx, d.x - d.w / 2, d.y - d.h / 2, d.w, 6, d.h);
+        ctx.fillStyle = d.caught === true ? c.okSoft : d.caught === false ? c.koSoft : c.surface2; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = d.caught === true ? c.ok : d.caught === false ? c.ko : c.line2; ctx.stroke();
+        ctx.fillStyle = d.caught === true ? c.ok : d.caught === false ? c.ko : c.ink; ctx.font = '600 14px ' + c.fontUi; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(d.t, d.x, d.y + 1);
+        ctx.globalAlpha = 1;
+      }
+      // Cesta: una U de acento.
+      const py = H - 30; ctx.strokeStyle = c.accent; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(pl.x - pl.w / 2, py - pl.h / 2); ctx.lineTo(pl.x - pl.w / 2 + 6, py + pl.h / 2); ctx.lineTo(pl.x + pl.w / 2 - 6, py + pl.h / 2); ctx.lineTo(pl.x + pl.w / 2, py - pl.h / 2); ctx.stroke();
+      this.fx.draw(ctx, c.fontUi); ctx.restore();
+    }
+  }
+  register({ key: 'rain', name: 'Lluvia', icon: 'basket', canvas: true, lives: 3, desc: 'Caen palabras. Atrapa con la cesta la que responde al enunciado y esquiva todas las demás.', intro: 'Diez enunciados. Las palabras caen mezcladas: solo una responde. Mueve la cesta para recogerla y aparta la cesta de las otras. Tres vidas.', needs: p => p.concepts.filter(k => k.term.length <= 26).length >= 5 || clozePool(p).filter(c => c.answer.length <= 18).length >= 5 }, Rain);
   /* ===================== Jefes: aventura por niveles, un jefe por sección y un jefe final ===================== */
   const BEATEN = {}; // jefes vencidos mientras la página está abierta (sin progreso guardado, como pidió Cero)
   class Boss extends Game {
@@ -930,7 +1122,6 @@ window.FUN = (function () {
     timeout() {
       this.waiting = true; const cur = this.current; if (this.choiceBtns) this.choiceBtns.forEach(b => b.disabled = true); if (this.input) this.input.disabled = true;
       const info = cur.kind === 'mc' ? { q: cur.q.prompt, a: cur.q.answer, why: cur.q.why } : { q: cur.c.text.replace('___', '______'), a: cur.c.answer, why: '' };
-      this.gradeOnce(cur.kind === 'mc' ? cur.q.id : cur.c.id, false);
       Snd.wrong(); this.damagePlayer(15); this.miss({ q: info.q, a: info.a });
       if (this.hp <= 0) return setTimeout(() => this.end(false), 500);
       this.feedback({ title: 'Se acabó el tiempo', prompt: info.q, answer: info.a, why: info.why }).then(() => this.nextTurn());
@@ -1042,7 +1233,7 @@ window.FUN = (function () {
         this.reveal('No era «' + hl.label + '». ' + (this.cur.set ? 'Valían: ' : 'Era: ') + this.cur.answer);
       }
     }
-    escaped() { this.miss({ q: this.cur.text, a: this.cur.answer }); this.gradeOnce(this.cur.id, false); Snd.wrong(); this.timeLeft = Math.max(0, this.timeLeft - 2); this.reveal('Se ha escapado. ' + (this.cur.set ? 'Valían: ' : 'Era: ') + this.cur.answer); }
+    escaped() { this.miss({ q: this.cur.text, a: this.cur.answer }); Snd.wrong(); this.timeLeft = Math.max(0, this.timeLeft - 2); this.reveal('Se ha escapado. ' + (this.cur.set ? 'Valían: ' : 'Era: ') + this.cur.answer); }
     reveal(text) {
       this.lock = true; for (const hl of this.holes) if (hl.up) { hl.mole.classList.toggle('ok', hl.isTarget); hl.up = false; }
       this.prompt({ label: text, text: this.cur.text, small: !!this.cur.small }); const lb = this.promptEl.querySelector('.fun-label'); if (lb) lb.style.color = 'var(--ko)';
