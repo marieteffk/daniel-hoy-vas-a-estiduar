@@ -39,7 +39,7 @@ const state = { packs: [], packId: null, prog: {}, runId: 0, caps: { sample: und
 let activeShell = null; let funMounted = false;
 function leaveGame() {
   if (activeShell) { const s = activeShell; activeShell = null; s.destroy(); }
-  if (funMounted) { funMounted = false; try { if (window.FUN && typeof window.FUN.unmount === 'function') window.FUN.unmount(); } catch (e) { console.error(e); } }
+  if (funMounted) { funMounted = false; $('#view').setAttribute('aria-live', 'polite'); try { if (window.FUN && typeof window.FUN.unmount === 'function') window.FUN.unmount(); } catch (e) { console.error(e); } }
 }
 
 
@@ -197,6 +197,8 @@ function renderThemePanel() {
 function toggleThemePanel(force) {
   const panel = $('#themePanel'); const btn = $('#themeBtn'); const open = typeof force === 'boolean' ? force : panel.hidden;
   panel.hidden = !open; btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  // Si hay una partida de FUN en marcha, se pausa mientras se elige el color o el modo.
+  if (open && funMounted) { try { const g = window.FUN.current && window.FUN.current(); if (g && g.state === 'running') g.pause(); } catch (e) { console.error(e); } }
 }
 
 /* ===================== Cabecera y navegación ===================== */
@@ -211,7 +213,8 @@ $('#brandBtn').addEventListener('click', () => renderHome());
 $('#themeBtn').addEventListener('click', (e) => { e.stopPropagation(); toggleThemePanel(); });
 // composedPath se evalúa al despachar: aunque el botón pulsado se haya reconstruido, sigue contando como clic dentro del panel.
 document.addEventListener('click', (e) => { const panel = $('#themePanel'); if (!panel.hidden && !(e.composedPath ? e.composedPath().includes(panel) : panel.contains(e.target))) toggleThemePanel(false); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const panel = $('#themePanel'); if (!panel.hidden) { toggleThemePanel(false); $('#themeBtn').focus(); } } });
+// Con el panel abierto, Escape solo lo cierra: stopPropagation evita que llegue al juego de FUN (escucha en window) y lo pause.
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const panel = $('#themePanel'); if (!panel.hidden) { e.stopPropagation(); toggleThemePanel(false); $('#themeBtn').focus(); } } });
 
 /* ===================== Inicio ===================== */
 const GAME_DEFS = [
@@ -272,8 +275,9 @@ const FUN_API = Object.freeze({ el, icon, pack, allItems, pick, shuffle, sample,
 function renderFun() {
   state.runId++; leaveGame(); setNav('fun'); const view = $('#view'); view.replaceChildren();
   if (window.FUN && typeof window.FUN.mount === 'function') {
-    funMounted = true;
-    try { window.FUN.mount(view, FUN_API); } catch (e) { console.error(e); funMounted = false; view.replaceChildren(el('div', { class: 'empty' }, el('h1', { text: 'FUN' }), el('p', { class: 'muted', text: 'No se pudo abrir esta pestaña.' }))); }
+    // Los juegos reescriben marcador y reloj a menudo: sin esto, un lector de pantalla los anunciaría sin parar.
+    funMounted = true; view.setAttribute('aria-live', 'off');
+    try { window.FUN.mount(view, FUN_API); } catch (e) { console.error(e); funMounted = false; view.setAttribute('aria-live', 'polite'); view.replaceChildren(el('div', { class: 'empty' }, el('h1', { text: 'FUN' }), el('p', { class: 'muted', text: 'No se pudo abrir esta pestaña.' }))); }
   } else {
     view.append(el('div', { class: 'empty' }, el('h1', { text: 'FUN' }), el('p', { class: 'muted', text: 'Los juegos no se han cargado. Recarga la página y, si sigue igual, avisa a quien mantiene la web.' })));
   }
@@ -711,6 +715,8 @@ function renderWhy() {
 }
 
 /* ===================== Temas ===================== */
+// Borra las claves de un tema eliminado (récords de los juegos de estudio y de FUN), para que no hereden nada si se importa otro con el mismo id.
+function delPrefix(prefix) { try { Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k)); } catch (e) { } }
 function renderPacks() {
   state.runId++; leaveGame(); setNav('packs'); const view = $('#view'); view.replaceChildren();
   const list = el('div', { class: 'packs' });
@@ -722,7 +728,7 @@ function renderPacks() {
     actions.append(el('button', { class: 'btn small', type: 'button', onclick: () => exportPack(p, row) }, 'Exportar JSON'));
     const confirmBtn = (label, cls, fn) => { const b = el('button', { class: 'btn small ' + cls, type: 'button', text: label }); let armed = false; b.addEventListener('click', () => { if (!armed) { armed = true; b.textContent = '¿Seguro? Pulsa otra vez'; setTimeout(() => { armed = false; b.textContent = label; }, 3000); } else fn(); }); return b; };
     actions.append(confirmBtn('Reiniciar progreso', 'text', () => { LS.del('ra.prog.' + p.id); if (p.id === state.packId) loadProg(); toast('Progreso reiniciado.'); renderPacks(); }));
-    if (!p.builtin) actions.append(confirmBtn('Eliminar', 'text danger', () => { state.packs = state.packs.filter(x => x.id !== p.id); saveCustomPacks(); LS.del('ra.prog.' + p.id); if (state.packId === p.id) setPack(state.packs[0].id); toast('Tema eliminado.'); renderPacks(); }));
+    if (!p.builtin) actions.append(confirmBtn('Eliminar', 'text danger', () => { state.packs = state.packs.filter(x => x.id !== p.id); saveCustomPacks(); LS.del('ra.prog.' + p.id); delPrefix('ra.best.' + p.id + '.'); delPrefix('ra.fun.best.' + p.id + '.'); if (state.packId === p.id) setPack(state.packs[0].id); toast('Tema eliminado.'); renderPacks(); }));
     list.append(row);
   }
   view.append(el('div', { class: 'page' },
