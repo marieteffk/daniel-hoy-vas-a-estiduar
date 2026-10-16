@@ -87,6 +87,7 @@ window.FUN = (function () {
 @media (prefers-reduced-motion: reduce) { .fun-stage.shake { animation: none; } }
 
 .fun-overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; background: color-mix(in srgb, var(--surface) 94%, transparent); z-index: 2; overflow: auto; }
+.fun-game.fun-dom .fun-overlay { background: var(--surface); } /* sin lienzo detrás no hay nada que dejar ver */
 .fun-overlay .fun-panel { display: grid; gap: 12px; width: 100%; max-width: 420px; animation: fun-rise 200ms ease-out; }
 @keyframes fun-rise { from { opacity: 0; transform: translateY(8px); } }
 .fun-overlay h2 { font-family: var(--font-display); font-size: 1.75rem; font-weight: 800; line-height: 1.12; margin: 0; letter-spacing: -0.01em; }
@@ -119,13 +120,13 @@ window.FUN = (function () {
 @media (pointer: coarse) { .fun-touch { display: grid; } }
 
 /* ---- Jefes (DOM) ---- */
-.fun-arena { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: end; padding: 16px 16px 0; min-height: 150px; }
+.fun-arena { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: end; padding: 16px 16px 12px; min-height: 150px; background: var(--surface-2); border-bottom: 2px solid var(--line-2); }
 .fun-fighter { display: grid; gap: 8px; justify-items: center; }
 .fun-fighter .fun-hp { width: 100%; display: grid; gap: 4px; }
 .fun-fighter .fun-hp div { display: flex; justify-content: space-between; font-size: .8125rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .fun-fighter.boss .fun-hp .fun-track i { background: var(--ko); }
-.fun-sprite { width: 72px; height: 72px; color: var(--accent); transition: transform 160ms ease-out; }
-.fun-fighter.boss .fun-sprite { width: 96px; height: 96px; color: var(--ink); }
+.fun-sprite { width: 72px; height: 72px; padding: 12px; border-radius: var(--r-m, 14px); background: var(--accent); color: var(--accent-ink); box-shadow: 0 4px 0 var(--accent-edge, var(--accent)); transition: transform 160ms ease-out; }
+.fun-fighter.boss .fun-sprite { width: 96px; height: 96px; padding: 16px; background: var(--ink); color: var(--paper); box-shadow: 0 4px 0 var(--ink-edge, var(--ink)); }
 .fun-sprite svg { width: 100%; height: 100%; }
 .fun-sprite.lunge { transform: translateX(28px); }
 .fun-fighter.boss .fun-sprite.lunge { transform: translateX(-28px); }
@@ -173,7 +174,7 @@ window.FUN = (function () {
 
 /* ---- Topos (DOM) ---- */
 .fun-moles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px; }
-.fun-hole { position: relative; aspect-ratio: 1.25; border-radius: var(--r-s, 10px); background: var(--surface-2); overflow: hidden; }
+.fun-hole { position: relative; aspect-ratio: 1.25; border-radius: var(--r-s, 10px); background: var(--surface-2); box-shadow: inset 0 -3px 0 var(--line); overflow: hidden; }
 .fun-mole { position: absolute; inset: 0; display: grid; place-items: center; padding: 8px; text-align: center; border: 0; border-radius: var(--r-s, 10px); background: var(--accent); color: var(--accent-ink); box-shadow: inset 0 -3px 0 var(--accent-edge, var(--accent)); font-weight: 600; font-size: .9375rem; line-height: 1.2; transform: translateY(105%); transition: transform 160ms ease-out, background 160ms ease-out; overflow-wrap: anywhere; hyphens: auto; }
 @media (max-width: 420px) { .fun-mole { padding: 6px 4px; font-size: .8125rem; } .fun-mole.long { font-size: .75rem; } }
 .fun-mole.up { transform: translateY(0); }
@@ -199,9 +200,11 @@ window.FUN = (function () {
 }
 @media (max-width: 420px) {
   .fun-prompt .fun-q { font-size: 1.1875rem; }
-  .fun-arena { min-height: 0; padding: 12px 12px 0; }
-  .fun-sprite { width: 56px; height: 56px; }
-  .fun-fighter.boss .fun-sprite { width: 72px; height: 72px; }
+  .fun-arena { min-height: 0; padding: 12px 12px 8px; gap: 12px; }
+  .fun-sprite { width: 52px; height: 52px; padding: 10px; }
+  .fun-fighter.boss .fun-sprite { width: 64px; height: 64px; padding: 13px; }
+  .fun-turn { padding: 12px; gap: 10px; }
+  .fun-choices { gap: 8px; }
   .fun-turn { padding: 12px; }
 }
 
@@ -267,8 +270,9 @@ window.FUN = (function () {
   };
 
   /* ---------- Colores del tema (variables de :root; se releen en "themechange") ---------- */
-  const COLOR_VARS = { paper: '--paper', surface: '--surface', surface2: '--surface-2', ink: '--ink', ink2: '--ink-2', line: '--line', line2: '--line-2', ok: '--ok', okSoft: '--ok-soft', ko: '--ko', koSoft: '--ko-soft', warn: '--warn', warnSoft: '--warn-soft', accent: '--accent', accentInk: '--accent-ink', accentSoft: '--accent-soft' };
-  const FALLBACK = { paper: '#F6F3EC', surface: '#FFFDF8', surface2: '#ECE7DC', ink: '#1A1813', ink2: '#6B665B', line: '#DAD4C8', line2: '#B9B1A1', ok: '#1F7A4D', okSoft: '#DDEFE3', ko: '#BC3A2B', koSoft: '#F7DEDA', warn: '#A86F13', warnSoft: '#F4E6C6', accent: '#2B40D4', accentInk: '#FFFFFF', accentSoft: '#E3E6F9' };
+  const COLOR_VARS = { paper: '--paper', surface: '--surface', surface2: '--surface-2', ink: '--ink', ink2: '--ink-2', line: '--line', line2: '--line-2', ok: '--ok', okSoft: '--ok-soft', ko: '--ko', koSoft: '--ko-soft', warn: '--warn', warnSoft: '--warn-soft', accent: '--accent', accentInk: '--accent-ink', accentSoft: '--accent-soft', accentEdge: '--accent-edge', inkEdge: '--ink-edge' };
+  // Solo si no se pueden leer las variables; son los valores del modo claro de page.html.
+  const FALLBACK = { paper: '#FBFAF7', surface: '#FFFFFF', surface2: '#EFEDE7', ink: '#1E1D1A', ink2: '#6F6B63', line: '#E3E0D8', line2: '#C9C5BB', ok: '#1B6E45', okSoft: '#E1F2E7', ko: '#B33628', koSoft: '#F9E1DD', warn: '#8E5D0E', warnSoft: '#F4E6C6', accent: '#2B40D4', accentInk: '#FFFFFF', accentSoft: '#E2E5F8', accentEdge: '#1F2E99', inkEdge: '#161513', okEdge: '#134F32', koEdge: '#81271D' };
   let colorCache = null;
   function colors() {
     if (colorCache) return colorCache;
@@ -277,6 +281,8 @@ window.FUN = (function () {
     for (const [k, v] of Object.entries(COLOR_VARS)) { const val = (cs.getPropertyValue(v) || '').trim(); c[k] = val || FALLBACK[k]; }
     c.fontUi = (cs.getPropertyValue('--font-ui') || cs.getPropertyValue('--font-body') || '').trim() || 'system-ui, sans-serif';
     c.fontDisplay = (cs.getPropertyValue('--font-display') || '').trim() || c.fontUi;
+    // Bordes de relieve de acierto y fallo, con la misma receta que --accent-edge en page.html.
+    c.okEdge = 'color-mix(in srgb, var(--ok) 72%, #000)'; c.koEdge = 'color-mix(in srgb, var(--ko) 72%, #000)';
     // color-mix() no sirve como fillStyle de canvas: lo resolvemos pintando en un canvas de 1 px.
     for (const k of Object.keys(c)) if (/color-mix|var\(/.test(c[k])) c[k] = resolveColor(c[k], FALLBACK[k]);
     colorCache = c; return c;
@@ -311,7 +317,7 @@ window.FUN = (function () {
   /* ---------- Sonido (efectos sintetizados, sin música; activo por defecto y se recuerda la preferencia) ---------- */
   const Snd = (() => {
     let ctx = null; let on = LS.get('ra.fun.sound', true) !== false;
-    const ensure = () => { if (!ctx) { try { ctx = new (G.AudioContext || G.webkitAudioContext)(); } catch { ctx = null; } } if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => { }); return ctx; };
+    const ensure = () => { if (!ctx) { try { ctx = new (G.AudioContext || G.webkitAudioContext)(); } catch { ctx = null; } } if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume().catch(() => { }); /* también 'interrupted' en iOS */ return ctx; };
     // `at` retrasa la nota en el reloj del audio (segundos): así las notas segundas y las secuencias se programan
     // de golpe y no queda ningún temporizador que suene después de salir del juego.
     const tone = (f, dur, type, vol, slide, at) => {
@@ -405,24 +411,28 @@ window.FUN = (function () {
   }
   // Efectos de juego sobre canvas: partículas, textos flotantes y sacudida. Discretos y planos.
   function makeFx() {
-    const parts = []; const texts = []; let shakeT = 0, shakeMag = 0;
+    const parts = []; const texts = []; const rings = []; let shakeT = 0, shakeMag = 0;
     const fx = {
-      burst(x, y, color, n = 12, speed = 160) { if (reducedMotion()) n = Math.min(n, 4); for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2; const v = speed * (0.4 + Math.random() * 0.8); parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, decay: 1.6 + Math.random() * 1.2, size: 3 + Math.random() * 3, color }); } },
+      burst(x, y, color, n = 12, speed = 160) { if (reducedMotion()) n = Math.min(n, 4); for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2; const v = speed * (0.4 + Math.random() * 0.8); parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, decay: 1.6 + Math.random() * 1.2, size: 3 + Math.random() * 4, color }); } },
+      // Onda de impacto: un anillo que crece y se apaga en un tercio de segundo.
+      ring(x, y, color, r1 = 38) { if (reducedMotion()) return; rings.push({ x, y, color, r: 8, r1, life: 1 }); },
       text(x, y, str, color, size = 18) { texts.push({ x, y, str, color, life: 1, size }); },
       shake(mag = 5) { if (reducedMotion()) return; shakeT = .22; shakeMag = mag; },
       update(dt) {
         for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt; p.life -= p.decay * dt; if (p.life <= 0) parts.splice(i, 1); }
         for (let i = texts.length - 1; i >= 0; i--) { const t = texts[i]; t.y -= 34 * dt; t.life -= 1.1 * dt; if (t.life <= 0) texts.splice(i, 1); }
+        for (let i = rings.length - 1; i >= 0; i--) { const r = rings[i]; r.r += (r.r1 - r.r) * Math.min(1, dt * 9); r.life -= 3 * dt; if (r.life <= 0) rings.splice(i, 1); }
         if (shakeT > 0) shakeT -= dt;
       },
       offset() { if (shakeT <= 0) return [0, 0]; const m = shakeMag * (shakeT / .22); return [(Math.random() - .5) * 2 * m, (Math.random() - .5) * 2 * m]; },
       draw(ctx, fontUi) {
+        for (const r of rings) { ctx.globalAlpha = clamp(r.life, 0, 1); ctx.strokeStyle = r.color; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2); ctx.stroke(); }
         for (const p of parts) { ctx.globalAlpha = clamp(p.life, 0, 1); ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size); }
         ctx.globalAlpha = 1;
         for (const t of texts) { ctx.globalAlpha = clamp(t.life * 1.4, 0, 1); ctx.fillStyle = t.color; ctx.font = '800 ' + t.size + 'px ' + fontUi; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t.str, t.x, t.y); }
         ctx.globalAlpha = 1;
       },
-      clear() { parts.length = 0; texts.length = 0; shakeT = 0; }
+      clear() { parts.length = 0; texts.length = 0; rings.length = 0; shakeT = 0; }
     };
     return fx;
   }
@@ -438,6 +448,12 @@ window.FUN = (function () {
     return lines;
   }
   function roundRect(ctx, x, y, w, r, hgt) { const hh = hgt; ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + hh, r); ctx.arcTo(x + w, y + hh, x, y + hh, r); ctx.arcTo(x, y + hh, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  // Relieve plano, el mismo de los botones de la web: la forma repetida 3 px más abajo en su color de borde y encima la forma.
+  function relief(ctx, path, fill, edge, depth) { const d = depth == null ? 3 : depth; if (d) { ctx.save(); ctx.translate(0, d); path(); ctx.fillStyle = edge; ctx.fill(); ctx.restore(); } path(); ctx.fillStyle = fill; ctx.fill(); }
+  function reliefRect(ctx, x, y, w, hgt, r, fill, edge, depth) { relief(ctx, () => roundRect(ctx, x, y, w, r, hgt), fill, edge, depth); }
+  function reliefCircle(ctx, x, y, r, fill, edge, depth) { relief(ctx, () => { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); }, fill, edge, depth); }
+  // Rejilla de puntos de fondo; desplazada con la cámara da sensación de profundidad.
+  function dotGrid(ctx, W, H, color, step, shiftX, shiftY) { ctx.save(); ctx.fillStyle = color; const ox = (((shiftX || 0) % step) + step) % step, oy = (((shiftY || 0) % step) + step) % step; for (let y = oy - step; y < H + step; y += step) for (let x = ox - step; x < W + step; x += step) ctx.fillRect(x, y, 2, 2); ctx.restore(); }
 
   /* ---------- Juego base: pantalla, HUD, bucle, pausa, feedback y resultado ---------- */
   class Game {
@@ -462,7 +478,7 @@ window.FUN = (function () {
       this.promptEl = h('div', { class: 'fun-prompt', 'aria-live': 'polite' });
       this.stage = h('div', { class: 'fun-stage' });
       this.touchEl = h('div', { class: 'fun-touch' });
-      this.rootEl = h('section', { class: 'fun-game' },
+      this.rootEl = h('section', { class: 'fun-game ' + (this.def.canvas ? 'fun-canvas' : 'fun-dom') },
         h('div', { class: 'fun-head' }, h('div', { class: 'fun-title', text: this.def.name }), h('div', { class: 'fun-hud' }, this.scoreEl, this.comboEl, this.livesEl, this.metaEl), h('div', { class: 'fun-tools' }, this.sndBtn, this.pauseBtn, exitBtn)),
         this.promptEl, this.stage, this.touchEl);
       container.append(this.rootEl);
@@ -606,7 +622,7 @@ window.FUN = (function () {
       const extra = this.extraEndButtons(won);
       this.showOverlay(h('div', { class: 'fun-panel' },
         h('h2', { text: this.endTitle(won) }),
-        h('div', { class: 'fun-result' }, h('div', { class: 'fun-big', text: String(this.score) }), h('div', { class: 'fun-sub' + (r.record && this.score > 0 ? ' ok' : ''), text: r.record && this.score > 0 ? (r.prev ? 'Nuevo récord' : 'Primer récord') : 'Récord: ' + (r.prev ? r.prev.score : 0) }), h('div', { class: 'fun-sub', text: this.stats.correct + ' de ' + this.stats.answered + ' aciertos · ' + acc + ' %' + (this.stats.maxCombo >= 3 ? ' · mejor racha ' + this.stats.maxCombo : '') })),
+        h('div', { class: 'fun-result' }, h('div', { class: 'fun-big', text: String(this.score) }), h('div', { class: 'fun-sub' + (r.record && this.score > 0 ? ' ok' : ''), text: r.record ? (r.prev ? 'Nuevo récord' : 'Primer récord') : r.prev ? 'Récord: ' + r.prev.score : 'Sin récord todavía' }), h('div', { class: 'fun-sub', text: this.stats.correct + ' de ' + this.stats.answered + ' aciertos · ' + acc + ' %' + (this.stats.maxCombo >= 3 ? ' · mejor racha ' + this.stats.maxCombo : '') })),
         missed,
         h('div', { class: 'fun-row' }, extra, h('button', { class: 'fun-btn' + (extra.length ? '' : ' primary'), type: 'button', onclick: () => this.restart() }, 'Otra partida'), h('button', { class: 'fun-btn' + (extra.length ? ' tertiary' : ''), type: 'button', onclick: () => this.exit() }, 'Volver a FUN'))
       ), { kind: 'over', focus: true });
@@ -710,7 +726,8 @@ window.FUN = (function () {
     howto() { return [{ keys: ['left', 'right'], text: 'Mueve la nave. En el móvil, arrastra el dedo o usa los botones.' }, { keys: ['Espacio'], text: 'Dispara a la cápsula con la letra de la respuesta correcta. En el móvil, toca la pantalla.' }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
     start() { this.ship.x = this.cv.W / 2; this.makeStars(); this.nextRound(); }
     onResize() { this.makeStars(); }
-    makeStars() { const { W, H } = this.cv; this.stars = Array.from({ length: 40 }, () => ({ x: rnd(0, W), y: rnd(0, H), s: rnd(1, 2.2), v: rnd(12, 30) })); }
+    // Dos capas de estrellas: las lejanas pequeñas y lentas, las cercanas grandes y rápidas (paralaje).
+    makeStars() { const { W, H } = this.cv; const mk = (n, far) => Array.from({ length: n }, () => ({ x: rnd(0, W), y: rnd(0, H), s: far ? rnd(1.5, 2.5) : rnd(3, 4.5), v: far ? rnd(10, 22) : rnd(34, 56), far })); this.stars = [...mk(26, true), ...mk(12, false)]; }
     nextRound() {
       this.round++; if (this.round >= this.queue.length) return this.end(true);
       const q = this.queue[this.round]; this.q = q; this.roundT = 0; this.busy = false; this.bullets = [];
@@ -729,6 +746,7 @@ window.FUN = (function () {
       const { W, H } = this.cv; const s = this.ship;
       let dir = 0; if (this.keys.has('ArrowLeft') || this.keys.has('KeyA') || this.keys.has('TouchLeft')) dir -= 1; if (this.keys.has('ArrowRight') || this.keys.has('KeyD') || this.keys.has('TouchRight')) dir += 1;
       if (dir) { s.x += dir * 340 * dt; s.target = null; } else if (s.target != null) { s.x = lerp(s.x, s.target, Math.min(1, dt * 16)); if (Math.abs(s.x - s.target) < .5) s.target = null; }
+      this.moving = !!dir || (s.target != null && Math.abs(s.x - s.target) > 2);
       s.x = clamp(s.x, s.w / 2 + 6, W - s.w / 2 - 6);
       this.cool = Math.max(0, this.cool - dt);
       for (const st of this.stars) { st.y += st.v * dt; if (st.y > H) { st.y = -2; st.x = rnd(0, W); } }
@@ -747,13 +765,13 @@ window.FUN = (function () {
     hitPod(p) {
       const q = this.q; this.busy = true;
       if (p.i === q.a) {
-        p.dead = true; p.ok = true; Snd.hit(); this.fx.burst(p.x, p.y, this.c.ok, 16);
+        p.dead = true; p.ok = true; Snd.hit(); this.fx.burst(p.x, p.y, this.c.ok, 18, 200); this.fx.ring(p.x, p.y, this.c.ok);
         const bonus = Math.max(0, Math.round(60 - this.roundT * 5));
         this.hit(100 + bonus, { x: p.x, y: p.y }); this.gradeOnce(q.id, true); this.markLegend(q.a, p.i);
         for (const o of this.pods) if (!o.dead) { o.dead = true; o.fade = .6; }
         this.later(.6, () => this.nextRound());
       } else {
-        p.dead = true; p.ok = false; Snd.wrong(); this.fx.burst(p.x, p.y, this.c.ko, 12); this.fx.shake(6); this.markLegend(q.a, p.i); this.gradeOnce(q.id, false);
+        p.dead = true; p.ok = false; Snd.wrong(); this.fx.burst(p.x, p.y, this.c.ko, 14); this.fx.ring(p.x, p.y, this.c.ko); this.fx.shake(6); this.markLegend(q.a, p.i); this.gradeOnce(q.id, false);
         const alive = this.miss({ q: q.prompt, a: q.answer });
         this.feedback({ title: 'No era esa', prompt: q.prompt, answer: LETTERS[q.a] + ' · ' + q.answer, why: q.why }).then(() => { if (!alive) this.end(false); else this.nextRound(); });
       }
@@ -767,22 +785,25 @@ window.FUN = (function () {
       const { ctx, W, H } = this.cv; const c = this.c; const s = this.ship;
       ctx.save(); ctx.fillStyle = c.surface; ctx.fillRect(0, 0, W, H);
       const [ox, oy] = this.fx.offset(); ctx.translate(ox, oy);
-      ctx.fillStyle = c.line; for (const st of this.stars) ctx.fillRect(st.x, st.y, st.s, st.s);
+      for (const st of this.stars) { ctx.fillStyle = st.far ? c.line : c.line2; ctx.fillRect(st.x, st.y, st.s, st.s); }
+      // Suelo: la franja donde está la nave; si una cápsula la toca, ha llegado.
       const line = H - s.h - 16;
-      ctx.strokeStyle = c.line; ctx.lineWidth = 1; ctx.setLineDash([4, 6]); ctx.beginPath(); ctx.moveTo(0, line + .5); ctx.lineTo(W, line + .5); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = c.surface2; ctx.fillRect(0, line, W, H - line); ctx.fillStyle = c.line2; ctx.fillRect(0, line, W, 2);
+      // Cápsulas: botones redondos de acento con relieve y su letra; la acertada en verde, la fallada en rojo.
       for (const p of this.pods) {
         if (p.dead && p.fade <= 0) continue;
         ctx.globalAlpha = p.dead ? p.fade : 1;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.ok === true ? c.okSoft : p.ok === false ? c.koSoft : c.surface2; ctx.fill();
-        ctx.lineWidth = 1.5; ctx.strokeStyle = p.ok === true ? c.ok : p.ok === false ? c.ko : c.line2; ctx.stroke();
-        ctx.fillStyle = p.ok === true ? c.ok : p.ok === false ? c.ko : c.ink; ctx.font = '800 18px ' + c.fontDisplay; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(LETTERS[p.i], p.x, p.y + 1);
+        const fill = p.ok === true ? c.ok : p.ok === false ? c.ko : c.accent, edge = p.ok === true ? c.okEdge : p.ok === false ? c.koEdge : c.accentEdge;
+        reliefCircle(ctx, p.x, p.y, p.r, fill, edge, 3);
+        ctx.fillStyle = p.ok == null ? c.accentInk : c.paper; ctx.font = '800 18px ' + c.fontDisplay; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(LETTERS[p.i], p.x, p.y + 1);
         ctx.globalAlpha = 1;
       }
-      ctx.fillStyle = c.accent; for (const b of this.bullets) ctx.fillRect(b.x - 1.5, b.y - 7, 3, 14);
+      for (const b of this.bullets) { roundRect(ctx, b.x - 2.5, b.y - 8, 5, 2.5, 16); ctx.fillStyle = c.accent; ctx.fill(); roundRect(ctx, b.x - 1, b.y - 6, 2, 1, 8); ctx.fillStyle = c.accentInk; ctx.fill(); }
+      // Nave: cuerpo de acento con relieve, cabina clara y llama cuando se mueve.
       const y = H - 12;
-      ctx.fillStyle = c.accent; ctx.beginPath(); ctx.moveTo(s.x, y - s.h); ctx.lineTo(s.x + s.w / 2, y); ctx.lineTo(s.x - s.w / 2, y); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = c.surface; ctx.fillRect(s.x - 2, y - s.h + 8, 4, 7);
+      if (this.moving && this.state === 'running') { const fl = reducedMotion() ? 9 : 7 + Math.sin(now() / 28) * 3; ctx.fillStyle = c.warn; ctx.beginPath(); ctx.moveTo(s.x - 6, y); ctx.lineTo(s.x, y + fl); ctx.lineTo(s.x + 6, y); ctx.closePath(); ctx.fill(); }
+      relief(ctx, () => { ctx.beginPath(); ctx.moveTo(s.x, y - s.h); ctx.lineTo(s.x + s.w / 2, y); ctx.lineTo(s.x - s.w / 2, y); ctx.closePath(); }, c.accent, c.accentEdge, 3);
+      roundRect(ctx, s.x - 3, y - s.h + 7, 6, 2.5, 7); ctx.fillStyle = c.accentInk; ctx.fill();
       this.fx.draw(ctx, c.fontUi); ctx.restore();
     }
   }
@@ -832,7 +853,7 @@ window.FUN = (function () {
       if (this.busy) return;
       const { W, H } = this.cv; const pl = this.player; if (!this.prevW) this.prevW = W; this.roundT += dt; const vdt = this.roundT < this.readT ? dt * .3 : dt;
       let dir = 0; if (this.keys.has('ArrowLeft') || this.keys.has('KeyA') || this.keys.has('TouchLeft')) dir -= 1; if (this.keys.has('ArrowRight') || this.keys.has('KeyD') || this.keys.has('TouchRight')) dir += 1; if (!dir) dir = this.touchDir;
-      pl.vx = lerp(pl.vx, dir * 300, Math.min(1, dt * 10));
+      pl.vx = lerp(pl.vx, dir * 300, Math.min(1, dt * 10)); this.squash = Math.max(0, (this.squash || 0) - dt * 6);
       const prevY = pl.y; pl.vy += this.gravity * vdt; pl.x += pl.vx * dt; pl.y += pl.vy * vdt;
       if (pl.x < -pl.w / 2) pl.x += W + pl.w; else if (pl.x > W + pl.w / 2) pl.x -= W + pl.w;
       if (pl.vy > 0) {
@@ -844,14 +865,14 @@ window.FUN = (function () {
       if (pl.y - this.cam > H + 30) this.fell();
       for (const r of this.rows) for (const p of r.plats) if (p.broken && p.fade > 0) p.fade = Math.max(0, p.fade - dt * 2.5);
     }
-    bounce(p) { const pl = this.player; pl.y = p.y - pl.h; pl.vy = -this.jump; }
+    bounce(p) { const pl = this.player; pl.y = p.y - pl.h; pl.vy = -this.jump; this.squash = 1; }
     land(p) {
       const row = p.row;
       if (!row || row.answered) { this.bounce(p); Snd.step(); if (!row || row.plats[row.q.a] === p) this.lastSafe = p; return; }
       const q = row.q;
       if (p.i === q.a) {
         row.answered = true; p.ok = true; this.lastSafe = p; this.bounce(p); Snd.hit();
-        this.fx.burst(p.x + p.w / 2, p.y - this.cam, this.c.ok, 12, 120);
+        this.fx.burst(p.x + p.w / 2, p.y - this.cam, this.c.ok, 14, 150); this.fx.ring(p.x + p.w / 2, p.y - this.cam, this.c.ok, 34);
         this.hit(100 + this.round * 5, { x: p.x + p.w / 2, y: p.y - this.cam - 22 }); this.gradeOnce(q.id, true); this.markLegend(q.a, p.i);
         if (this.round + 1 >= this.queue.length) { this.busy = true; this.later(.5, () => this.end(true)); } else this.nextRound();
       } else {
@@ -875,27 +896,37 @@ window.FUN = (function () {
       const { ctx, W, H } = this.cv; const c = this.c; const pl = this.player; const cam = this.cam;
       ctx.save(); ctx.fillStyle = c.surface; ctx.fillRect(0, 0, W, H);
       const [ox, oy] = this.fx.offset(); ctx.translate(ox, oy);
+      // Pared de fondo: rejilla de puntos que sube a la mitad de velocidad que las plataformas (profundidad).
+      dotGrid(ctx, W, H, c.line, 26, 0, -cam * .5);
       // Marcas de altura cada tramo.
-      ctx.strokeStyle = c.line; ctx.lineWidth = 1; ctx.setLineDash([3, 9]);
+      ctx.strokeStyle = c.line2; ctx.lineWidth = 1; ctx.setLineDash([3, 9]);
       for (let i = 0; i <= this.queue.length; i++) { const y = this.rows.length ? (this.baseY - i * this.spacing) - cam : 0; if (y < -2 || y > H + 2) continue; ctx.beginPath(); ctx.moveTo(0, Math.round(y) + .5); ctx.lineTo(W, Math.round(y) + .5); ctx.stroke(); }
       ctx.setLineDash([]);
-      // Meta.
-      const gy = this.goalY - cam; if (gy > -20 && gy < H + 20) { ctx.fillStyle = c.ink2; ctx.font = '600 13px ' + c.fontUi; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText('Meta', W / 2, gy - 6); ctx.fillStyle = c.accent; ctx.fillRect(W / 2 - 40, gy - 3, 80, 3); }
+      // Meta: banderín y rótulo.
+      const gy = this.goalY - cam;
+      if (gy > -30 && gy < H + 20) {
+        ctx.fillStyle = c.ink2; ctx.font = '600 13px ' + c.fontUi; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText('Meta', W / 2 + 10, gy - 8);
+        ctx.fillStyle = c.accent; ctx.fillRect(W / 2 - 40, gy - 3, 80, 3); ctx.fillStyle = c.ink2; ctx.fillRect(W / 2 - 40, gy - 30, 2, 27);
+        ctx.fillStyle = c.accent; ctx.beginPath(); ctx.moveTo(W / 2 - 38, gy - 30); ctx.lineTo(W / 2 - 22, gy - 25); ctx.lineTo(W / 2 - 38, gy - 20); ctx.closePath(); ctx.fill();
+      }
+      // Plataformas: la fila en juego en acento con relieve; acertadas en verde, rotas en rojo, el resto apagadas.
       const drawPlat = (p, alpha) => {
         const y = p.y - cam; if (y < -30 || y > H + 30 || (p.broken && p.fade <= 0)) return;
         ctx.globalAlpha = alpha * (p.broken ? p.fade : 1);
-        roundRect(ctx, p.x, y, p.w, 5, 14);
-        ctx.fillStyle = p.ok === true ? c.okSoft : p.ok === false ? c.koSoft : p.neutral ? c.surface2 : c.surface; ctx.fill();
-        ctx.lineWidth = 1.5; ctx.strokeStyle = p.ok === true ? c.ok : p.ok === false ? c.ko : c.line2; ctx.stroke();
-        if (p.i >= 0) { ctx.fillStyle = p.ok === true ? c.ok : p.ok === false ? c.ko : c.ink; ctx.font = '800 14px ' + c.fontDisplay; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(LETTERS[p.i], p.x + p.w / 2, y + 7.5); }
+        const cur = !!p.row && p.row.i === this.round && !p.row.answered;
+        const fill = p.ok === true ? c.ok : p.ok === false ? c.ko : cur ? c.accent : c.surface2, edge = p.ok === true ? c.okEdge : p.ok === false ? c.koEdge : cur ? c.accentEdge : c.line2;
+        reliefRect(ctx, p.x, y, p.w, 14, 6, fill, edge, 3);
+        if (p.i >= 0) { ctx.fillStyle = p.ok != null ? c.paper : cur ? c.accentInk : c.ink2; ctx.font = '800 14px ' + c.fontDisplay; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(LETTERS[p.i], p.x + p.w / 2, y + 7.5); }
         ctx.globalAlpha = 1;
       };
       drawPlat(this.startPlat, 1);
-      for (const r of this.rows) { const alpha = r.answered ? .55 : r.i === this.round ? 1 : .3; for (const p of r.plats) drawPlat(p, alpha); }
-      // Jugador: una figura redondeada con dos ojos.
-      const px = pl.x, py = pl.y - cam;
-      roundRect(ctx, px - pl.w / 2, py, pl.w, 9, pl.h); ctx.fillStyle = c.accent; ctx.fill();
-      ctx.fillStyle = c.accentInk; ctx.beginPath(); ctx.arc(px - 5, py + 10, 2.2, 0, Math.PI * 2); ctx.arc(px + 5, py + 10, 2.2, 0, Math.PI * 2); ctx.fill();
+      for (const r of this.rows) { const alpha = r.answered ? .75 : r.i === this.round ? 1 : .45; for (const p of r.plats) drawPlat(p, alpha); }
+      // Jugador: figura redondeada de acento con relieve y dos ojos; se achata un instante al rebotar.
+      const px = pl.x, py = pl.y - cam; const sq = reducedMotion() ? 0 : (this.squash || 0);
+      ctx.save(); ctx.translate(px, py + pl.h); ctx.scale(1 + sq * .22, 1 - sq * .22); ctx.translate(-px, -(py + pl.h));
+      reliefRect(ctx, px - pl.w / 2, py, pl.w, pl.h, 9, c.accent, c.accentEdge, 3);
+      ctx.fillStyle = c.accentInk; ctx.beginPath(); ctx.arc(px - 5, py + 10, 2.4, 0, Math.PI * 2); ctx.arc(px + 5, py + 10, 2.4, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
       this.fx.draw(ctx, c.fontUi); ctx.restore();
     }
   }
@@ -943,7 +974,7 @@ window.FUN = (function () {
       if (!set.gradeAsSet && g.item.id) this.gradeOnce(g.item.id, ok);
       this.markLegend(g.item.c, this.car.lane);
       if (ok) {
-        Snd.hit(); this.fx.burst(this.car.x, this.cv.H - 78, this.c.ok, 10, 120);
+        Snd.hit(); this.fx.burst(this.car.x, this.cv.H - 78, this.c.ok, 14, 160); this.fx.ring(this.car.x, this.cv.H - 78, this.c.ok);
         this.hit(80 + Math.round(this.speed / 6), { x: this.car.x, y: this.cv.H - 120 });
         this.speed = Math.min(400, this.speed + 14);
         this.pending = () => { if (this.state === 'running') this.nextGate(); };
@@ -959,34 +990,35 @@ window.FUN = (function () {
     }
     draw() {
       const { ctx, W, H } = this.cv; const c = this.c; const laneW = W / this.lanes;
-      ctx.save(); ctx.fillStyle = c.surface; ctx.fillRect(0, 0, W, H);
+      ctx.save(); ctx.fillStyle = c.surface2; ctx.fillRect(0, 0, W, H);
       const [ox, oy] = this.fx.offset(); ctx.translate(ox, oy);
-      // Asfalto y marcas de carril que avanzan hacia abajo.
-      ctx.fillStyle = c.surface2; ctx.fillRect(8, 0, W - 16, H);
-      ctx.strokeStyle = c.line2; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(8, H); ctx.moveTo(W - 8, 0); ctx.lineTo(W - 8, H); ctx.stroke();
-      ctx.strokeStyle = c.line; ctx.lineWidth = 2; ctx.setLineDash([22, 22]); ctx.lineDashOffset = -(this.roadT % 44);
+      // Asfalto oscuro con bordillo y marcas de carril claras que avanzan hacia abajo.
+      ctx.fillStyle = c.line; ctx.fillRect(8, 0, W - 16, H);
+      ctx.fillStyle = c.line2; ctx.fillRect(7, 0, 3, H); ctx.fillRect(W - 10, 0, 3, H);
+      ctx.strokeStyle = c.surface; ctx.lineWidth = 3; ctx.setLineDash([22, 22]); ctx.lineDashOffset = -(this.roadT % 44);
       for (let i = 1; i < this.lanes; i++) { ctx.beginPath(); ctx.moveTo(laneW * i, 0); ctx.lineTo(laneW * i, H); ctx.stroke(); }
       ctx.setLineDash([]);
-      ctx.fillStyle = c.ink2; ctx.font = '600 13px ' + c.fontUi; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = c.ink2; ctx.font = '800 14px ' + c.fontDisplay; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       for (let i = 0; i < this.lanes; i++) ctx.fillText(String(i + 1), laneW * i + laneW / 2, H - 18);
-      // Puerta: una caja por carril con el nombre de la categoría.
+      // Puerta: una pancarta de acento por carril con el nombre de la categoría; al pasar, verde la correcta y roja la elegida si no lo era.
       const g = this.gate;
       if (g) {
         const bh = 52;
         for (let i = 0; i < this.lanes; i++) {
           const x = laneW * i + 10, w = laneW - 20, y = g.y;
-          let fill = c.surface, stroke = c.line2, ink = c.ink;
-          if (g.resolved) { if (i === g.item.c) { fill = c.okSoft; stroke = c.ok; ink = c.ok; } else if (i === g.chosen) { fill = c.koSoft; stroke = c.ko; ink = c.ko; } }
-          roundRect(ctx, x, y, w, 6, bh); ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = stroke; ctx.stroke();
+          let fill = c.accent, edge = c.accentEdge, ink = c.accentInk;
+          if (g.resolved) { if (i === g.item.c) { fill = c.ok; edge = c.okEdge; ink = c.paper; } else if (i === g.chosen) { fill = c.ko; edge = c.koEdge; ink = c.paper; } else { fill = c.surface2; edge = c.line2; ink = c.ink2; } }
+          reliefRect(ctx, x, y, w, bh, 8, fill, edge, 3);
           ctx.fillStyle = ink; ctx.font = '600 13px ' + c.fontUi; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           const lines = wrapText(ctx, g.set.cats[i], w - 14, 2); const lh = 16; const y0 = y + bh / 2 - (lines.length - 1) * lh / 2;
           lines.forEach((ln, k) => ctx.fillText(ln, x + w / 2, y0 + k * lh));
         }
       }
-      // Coche.
+      // Coche: ruedas, cuerpo de acento con relieve y lunas claras.
       const cx = this.car.x || laneW / 2, cy = H - 78, cw = 32, ch = 50;
-      roundRect(ctx, cx - cw / 2, cy - ch / 2, cw, 8, ch); ctx.fillStyle = c.accent; ctx.fill();
-      ctx.fillStyle = c.accentInk; ctx.globalAlpha = .7; roundRect(ctx, cx - cw / 2 + 6, cy - ch / 2 + 9, cw - 12, 3, 10); ctx.fill(); roundRect(ctx, cx - cw / 2 + 6, cy + ch / 2 - 16, cw - 12, 3, 7); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = c.ink; for (const [dx, dy] of [[-cw / 2 - 3, -ch / 2 + 7], [cw / 2 - 3, -ch / 2 + 7], [-cw / 2 - 3, ch / 2 - 19], [cw / 2 - 3, ch / 2 - 19]]) { roundRect(ctx, cx + dx, cy + dy, 6, 2, 12); ctx.fill(); }
+      reliefRect(ctx, cx - cw / 2, cy - ch / 2, cw, ch, 8, c.accent, c.accentEdge, 3);
+      ctx.fillStyle = c.accentInk; ctx.globalAlpha = .85; roundRect(ctx, cx - cw / 2 + 6, cy - ch / 2 + 9, cw - 12, 3, 10); ctx.fill(); roundRect(ctx, cx - cw / 2 + 6, cy + ch / 2 - 16, cw - 12, 3, 7); ctx.fill(); ctx.globalAlpha = 1;
       this.fx.draw(ctx, c.fontUi); ctx.restore();
     }
   }
@@ -1006,7 +1038,10 @@ window.FUN = (function () {
       ]);
     }
     howto() { return [{ keys: ['left', 'right'], text: 'Mueve la cesta. En el móvil, arrastra el dedo o usa los botones.' }, { keys: ['Atrapa'], text: 'Recoge la palabra que responde al enunciado y deja caer las demás. Recoger otra cuesta una vida.' }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
-    start() { this.player.x = this.cv.W / 2; this.nextRound(); }
+    start() { this.player.x = this.cv.W / 2; this.makeRain(); this.nextRound(); }
+    onResize() { this.makeRain(); }
+    // Dos capas de lluvia fina de fondo (paralaje); no interfieren con las palabras.
+    makeRain() { const { W, H } = this.cv; const mk = (n, far) => Array.from({ length: n }, () => ({ x: rnd(0, W), y: rnd(-H, H), len: far ? rnd(6, 10) : rnd(12, 18), v: far ? rnd(150, 210) : rnd(280, 360), far })); this.rain = [...mk(28, true), ...mk(12, false)]; }
     nextRound() {
       this.round++; if (this.round >= this.rounds.length) return this.end(true);
       const r = this.rounds[this.round]; this.r = r; this.busy = false; this.drops = []; this.roundT = 0; this.spawnT = .5;
@@ -1017,7 +1052,9 @@ window.FUN = (function () {
     }
     onPointer(ev) { if (ev.type === 'move' || ev.type === 'down') this.player.target = ev.x; }
     tick(dt) {
-      if (this.busy) return; const { W, H } = this.cv; const pl = this.player;
+      const { W, H } = this.cv; const pl = this.player;
+      if (this.rain) for (const r of this.rain) { r.y += r.v * dt; if (r.y > H) { r.y = -r.len - rnd(0, 40); r.x = rnd(0, W); } }
+      if (this.busy) return;
       let dir = 0; if (this.keys.has('ArrowLeft') || this.keys.has('KeyA') || this.keys.has('TouchLeft')) dir -= 1; if (this.keys.has('ArrowRight') || this.keys.has('KeyD') || this.keys.has('TouchRight')) dir += 1;
       if (dir) { pl.x += dir * 380 * dt; pl.target = null; } else if (pl.target != null) { pl.x = lerp(pl.x, pl.target, Math.min(1, dt * 16)); if (Math.abs(pl.x - pl.target) < .5) pl.target = null; }
       pl.x = clamp(pl.x, pl.w / 2 + 4, W - pl.w / 2 - 4);
@@ -1038,11 +1075,11 @@ window.FUN = (function () {
     catchDrop(d) {
       const r = this.r; d.done = true; d.caught = d.ok;
       if (d.ok) {
-        Snd.hit(); this.fx.burst(d.x, d.y, this.c.ok, 14); this.hit(100 + Math.max(0, Math.round(40 - this.roundT * 5)), { x: d.x, y: d.y - 16 }); this.gradeOnce(r.id, true); this.busy = true;
+        Snd.hit(); this.fx.burst(d.x, d.y, this.c.ok, 16, 190); this.fx.ring(d.x, d.y, this.c.ok); this.hit(100 + Math.max(0, Math.round(40 - this.roundT * 5)), { x: d.x, y: d.y - 16 }); this.gradeOnce(r.id, true); this.busy = true;
         for (const o of this.drops) if (!o.done) { o.done = true; o.fade = .6; }
         this.later(.55, () => this.nextRound());
       } else {
-        Snd.wrong(); this.fx.burst(d.x, d.y, this.c.ko, 12); this.fx.shake(6); this.gradeOnce(r.id, false); this.busy = true;
+        Snd.wrong(); this.fx.burst(d.x, d.y, this.c.ko, 14); this.fx.ring(d.x, d.y, this.c.ko); this.fx.shake(6); this.gradeOnce(r.id, false); this.busy = true;
         const alive = this.miss({ q: r.text, a: r.answer });
         this.feedback({ title: 'Esa no era', prompt: r.text, answer: r.answer, why: r.why }).then(() => { if (!alive) this.end(false); else this.nextRound(); });
       }
@@ -1056,17 +1093,21 @@ window.FUN = (function () {
       const { ctx, W, H } = this.cv; const c = this.c; const pl = this.player;
       ctx.save(); ctx.fillStyle = c.surface; ctx.fillRect(0, 0, W, H);
       const [ox, oy] = this.fx.offset(); ctx.translate(ox, oy);
-      ctx.strokeStyle = c.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, H - 12.5); ctx.lineTo(W, H - 12.5); ctx.stroke();
+      // Lluvia de fondo y suelo.
+      if (this.rain) { ctx.lineCap = 'round'; for (const r of this.rain) { ctx.strokeStyle = r.far ? c.line : c.line2; ctx.lineWidth = r.far ? 1.5 : 2; ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x, r.y + r.len); ctx.stroke(); } }
+      ctx.fillStyle = c.surface2; ctx.fillRect(0, H - 14, W, 14); ctx.fillStyle = c.line2; ctx.fillRect(0, H - 14, W, 2);
+      // Palabras: cápsulas de acento con relieve; la atrapada bien en verde, la mal en rojo.
       for (const d of this.drops) {
         if (d.done && d.fade <= 0) continue; ctx.globalAlpha = d.done ? d.fade : 1;
-        roundRect(ctx, d.x - d.w / 2, d.y - d.h / 2, d.w, 6, d.h);
-        ctx.fillStyle = d.caught === true ? c.okSoft : d.caught === false ? c.koSoft : c.surface2; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = d.caught === true ? c.ok : d.caught === false ? c.ko : c.line2; ctx.stroke();
-        ctx.fillStyle = d.caught === true ? c.ok : d.caught === false ? c.ko : c.ink; ctx.font = '600 14px ' + c.fontUi; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(d.t, d.x, d.y + 1);
+        const fill = d.caught === true ? c.ok : d.caught === false ? c.ko : c.accent, edge = d.caught === true ? c.okEdge : d.caught === false ? c.koEdge : c.accentEdge;
+        reliefRect(ctx, d.x - d.w / 2, d.y - d.h / 2, d.w, d.h, 8, fill, edge, 3);
+        ctx.fillStyle = d.caught == null ? c.accentInk : c.paper; ctx.font = '600 14px ' + c.fontUi; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(d.t, d.x, d.y + 1);
         ctx.globalAlpha = 1;
       }
-      // Cesta: una U de acento.
-      const py = H - 30; ctx.strokeStyle = c.accent; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      ctx.beginPath(); ctx.moveTo(pl.x - pl.w / 2, py - pl.h / 2); ctx.lineTo(pl.x - pl.w / 2 + 6, py + pl.h / 2); ctx.lineTo(pl.x + pl.w / 2 - 6, py + pl.h / 2); ctx.lineTo(pl.x + pl.w / 2, py - pl.h / 2); ctx.stroke();
+      // Cesta: un cubo de acento con relieve y borde claro.
+      const py = H - 30, bw = pl.w, bh = pl.h + 6;
+      relief(ctx, () => { ctx.beginPath(); ctx.moveTo(pl.x - bw / 2, py - bh / 2); ctx.lineTo(pl.x + bw / 2, py - bh / 2); ctx.lineTo(pl.x + bw / 2 - 7, py + bh / 2); ctx.lineTo(pl.x - bw / 2 + 7, py + bh / 2); ctx.closePath(); }, c.accent, c.accentEdge, 3);
+      ctx.fillStyle = c.accentInk; ctx.globalAlpha = .85; ctx.fillRect(pl.x - bw / 2 + 4, py - bh / 2 + 3, bw - 8, 3); ctx.globalAlpha = 1;
       this.fx.draw(ctx, c.fontUi); ctx.restore();
     }
   }
@@ -1297,5 +1338,5 @@ window.FUN = (function () {
   const moleCloze = (p) => { const c = clozePool(p).filter(x => x.answer.length <= 24); return c.length >= 5 ? c : []; };
   const moleSorts = (p) => p.sort.filter(s => s.cats.length >= 2 && s.items.every(it => it.t.length <= 60) && s.cats.some((_, ci) => s.items.filter(it => it.c === ci).length >= 2 && s.items.filter(it => it.c !== ci).length >= 2));
   register({ key: 'moles', name: 'Topos', icon: 'mole', canvas: false, lives: 0, desc: 'Sesenta segundos. Los términos asoman y se esconden; toca solo el que responde al enunciado.', intro: 'Un minuto de reflejos. Arriba sale una definición, una frase con hueco o una categoría; abajo asoman topos con términos. Toca el que corresponde y deja pasar los demás. Los fallos restan tiempo.', needs: p => moleConcepts(p).length > 0 || moleCloze(p).length > 0 || moleSorts(p).length > 0 }, Moles);
-  return { mount, unmount, start: (key) => startGame(key, root, { onExit: renderHub }), games: GAMES, current: () => current, gradeMode: GRADE_MODE, _: { Game, register, h, icon, kbd, colors, Snd, mcPool, dealMc, sortSets, clozePool, clozeOk, LETTERS, A, wrapText, roundRect, clamp, lerp, rnd, reducedMotion, coarse, fshuffle } };
+  return { mount, unmount, start: (key) => startGame(key, root, { onExit: renderHub }), games: GAMES, current: () => current, gradeMode: GRADE_MODE, _: { Game, register, h, icon, kbd, colors, Snd, mcPool, dealMc, sortSets, clozePool, clozeOk, LETTERS, A, wrapText, roundRect, relief, reliefRect, reliefCircle, dotGrid, clamp, lerp, rnd, reducedMotion, coarse, fshuffle } };
 })();
