@@ -275,7 +275,7 @@ function renderFun() {
     funMounted = true;
     try { window.FUN.mount(view, FUN_API); } catch (e) { console.error(e); funMounted = false; view.replaceChildren(el('div', { class: 'empty' }, el('h1', { text: 'FUN' }), el('p', { class: 'muted', text: 'No se pudo abrir esta pestaña.' }))); }
   } else {
-    view.append(el('div', { class: 'empty' }, el('h1', { text: 'FUN' }), el('p', { class: 'muted', text: 'Aquí irán los juegos tipo videojuego. Están en preparación.' })));
+    view.append(el('div', { class: 'empty' }, el('h1', { text: 'FUN' }), el('p', { class: 'muted', text: 'Los juegos no se han cargado. Recarga la página y, si sigue igual, avisa a quien mantiene la web.' })));
   }
   window.scrollTo({ top: 0 });
 }
