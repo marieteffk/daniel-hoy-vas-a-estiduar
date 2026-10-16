@@ -94,6 +94,8 @@ window.FUN = (function () {
 .fun-overlay p { margin: 0; color: var(--ink-2); line-height: 1.5; }
 .fun-overlay p.ink { color: var(--ink); }
 .fun-overlay .fun-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.fun-cover-icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 18px; background: var(--accent); color: var(--accent-ink); box-shadow: 0 4px 0 var(--accent-edge); margin-bottom: 4px; }
+.fun-cover-icon svg { width: 36px; height: 36px; }
 .fun-howto { display: grid; gap: 10px; }
 .fun-howto .fun-h { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
 .fun-howto .fun-keys { display: inline-flex; gap: 4px; }
@@ -162,14 +164,11 @@ window.FUN = (function () {
 .fun-type input.ok { border-color: var(--ok); background: var(--ok-soft); }
 .fun-type input.ko { border-color: var(--ko); background: var(--ko-soft); }
 .fun-levels { display: grid; }
-.fun-level { display: grid; grid-template-columns: 40px 1fr auto; gap: 14px; align-items: center; width: 100%; padding: 14px 0; border: 0; border-top: 1px solid var(--line); background: none; text-align: left; color: var(--ink); }
+.fun-level { display: grid; grid-template-columns: 40px 1fr; gap: 14px; align-items: center; width: 100%; padding: 14px 0; border: 0; border-top: 1px solid var(--line); background: none; text-align: left; color: var(--ink); }
 .fun-level:last-child { border-bottom: 1px solid var(--line); }
 .fun-level .fun-n { font-family: var(--font-display); font-size: 1.75rem; font-weight: 800; color: var(--ink-2); font-variant-numeric: tabular-nums; line-height: 1; }
 .fun-level .fun-name { font-weight: 600; }
 .fun-level .fun-sub { color: var(--ink-2); font-size: .8125rem; }
-.fun-level .fun-state { color: var(--ink-2); font-size: .8125rem; display: inline-flex; align-items: center; gap: 6px; }
-.fun-level .fun-state svg { width: 18px; height: 18px; }
-.fun-level.done .fun-state { color: var(--ok); }
 .fun-level:hover .fun-name { color: var(--accent); }
 
 /* ---- Topos (DOM) ---- */
@@ -192,7 +191,7 @@ window.FUN = (function () {
 @media (max-width: 420px), (max-height: 760px) {
   .fun-overlay { padding: 16px; }
   .fun-overlay .fun-panel { gap: 10px; }
-  .fun-overlay .fun-panel > p.ink, .fun-overlay .fun-intro { display: none; }
+  .fun-cover-icon { width: 52px; height: 52px; border-radius: 14px; } .fun-cover-icon svg { width: 30px; height: 30px; }
   .fun-result .fun-big { font-size: 3rem; }
   .fun-missed { max-height: 120px; }
   .fun-answer b { font-size: 1.125rem; }
@@ -452,6 +451,8 @@ window.FUN = (function () {
   function relief(ctx, path, fill, edge, depth) { const d = depth == null ? 3 : depth; if (d) { ctx.save(); ctx.translate(0, d); path(); ctx.fillStyle = edge; ctx.fill(); ctx.restore(); } path(); ctx.fillStyle = fill; ctx.fill(); }
   function reliefRect(ctx, x, y, w, hgt, r, fill, edge, depth) { relief(ctx, () => roundRect(ctx, x, y, w, r, hgt), fill, edge, depth); }
   function reliefCircle(ctx, x, y, r, fill, edge, depth) { relief(ctx, () => { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); }, fill, edge, depth); }
+  // Fondo de los lienzos: del acento suave arriba a la superficie abajo.
+  function sky(ctx, W, H, c) { const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, c.accentSoft); g.addColorStop(1, c.surface); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
   // Rejilla de puntos de fondo; desplazada con la cámara da sensación de profundidad.
   function dotGrid(ctx, W, H, color, step, shiftX, shiftY) { ctx.save(); ctx.fillStyle = color; const ox = (((shiftX || 0) % step) + step) % step, oy = (((shiftY || 0) % step) + step) % step; for (let y = oy - step; y < H + step; y += step) for (let x = ox - step; x < W + step; x += step) ctx.fillRect(x, y, 2, 2); ctx.restore(); }
 
@@ -520,9 +521,9 @@ window.FUN = (function () {
     // --- portada ---
     showStart() {
       const b = best(this.key);
-      const rows = this.howto().filter(r => !(r.kb && coarse())).map(r => h('div', { class: 'fun-h' }, h('span', { class: 'fun-keys' }, r.keys.map(kbd)), h('span', { text: r.text })));
+      const rows = this.howto().filter(r => !(r.kb && coarse()) && !(r.touch && !coarse())).map(r => h('div', { class: 'fun-h' }, h('span', { class: 'fun-keys' }, r.keys.map(kbd)), h('span', { text: r.text })));
       this.showOverlay(h('div', { class: 'fun-panel' },
-        h('h2', { text: this.def.name }), h('p', { class: 'fun-intro', text: this.def.intro }),
+        h('span', { class: 'fun-cover-icon', 'aria-hidden': 'true' }, icon(this.def.icon)), h('h2', { text: this.def.name }),
         h('div', { class: 'fun-howto' }, rows),
         b ? h('p', { class: 'fun-num', text: 'Tu récord: ' + b.score }) : null,
         h('div', { class: 'fun-row' }, h('button', { class: 'fun-btn primary', type: 'button', onclick: () => this.begin() }, icon('play'), 'Jugar'), h('button', { class: 'fun-btn tertiary', type: 'button', onclick: () => this.exit() }, 'Volver'))
@@ -598,7 +599,6 @@ window.FUN = (function () {
         const go = () => { this.overlayKind = null; this.resume(); res(); };
         this.showOverlay(h('div', { class: 'fun-panel fun-fb' },
           h('h2', { text: o.title || 'No era esa' }),
-          o.prompt ? h('p', { class: 'ink', text: o.prompt }) : null,
           h('div', { class: 'fun-answer' }, h('span', { class: 'fun-label', text: o.answerLabel || 'Respuesta correcta' }), h('b', { class: 'ok', text: o.answer })),
           o.why ? h('p', { class: 'fun-why', text: o.why }) : null,
           h('div', { class: 'fun-row' }, h('button', { class: 'fun-btn primary', type: 'button', onclick: go }, 'Seguir'))
@@ -702,7 +702,7 @@ window.FUN = (function () {
         h('span', { class: 'fun-item-best' }, b ? 'Récord ' + b.score : ''), icon('right', 'fun-chev')));
     }
     root.append(h('section', { class: 'fun' },
-      h('div', { class: 'fun-hub-head' }, h('h1', { text: 'FUN' }), h('p', { text: 'Seis juegos de acción con las preguntas de «' + p.title + '». Para jugar con el teclado o con el dedo; el sonido se apaga en cada juego.' })),
+      h('div', { class: 'fun-hub-head' }, h('h1', { text: 'FUN' }), h('p', { text: 'Seis juegos de acción con las preguntas de «' + p.title + '».' })),
       list
     ));
   }
@@ -723,7 +723,7 @@ window.FUN = (function () {
         { icon: 'right', label: 'Derecha', press: () => this.keys.add('TouchRight'), release: () => this.keys.delete('TouchRight') }
       ]);
     }
-    howto() { return [{ keys: ['left', 'right'], text: 'Mueve la nave. En el móvil, arrastra el dedo o usa los botones.' }, { keys: ['Espacio'], text: 'Dispara a la cápsula con la letra de la respuesta correcta. En el móvil, toca la pantalla.' }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
+    howto() { return [{ keys: ['left', 'right'], text: 'Mueve la nave', kb: true }, { keys: ['Espacio'], text: 'Dispara a la letra correcta', kb: true }, { keys: ['left', 'fire', 'right'], text: 'Mueve y dispara a la letra correcta', touch: true }, { keys: ['Esc'], text: 'Pausa', kb: true }]; }
     start() { this.ship.x = this.cv.W / 2; this.makeStars(); this.nextRound(); }
     onResize() { this.makeStars(); }
     // Dos capas de estrellas: las lejanas pequeñas y lentas, las cercanas grandes y rápidas (paralaje).
@@ -783,9 +783,9 @@ window.FUN = (function () {
     }
     draw() {
       const { ctx, W, H } = this.cv; const c = this.c; const s = this.ship;
-      ctx.save(); ctx.fillStyle = c.surface; ctx.fillRect(0, 0, W, H);
+      ctx.save(); sky(ctx, W, H, c);
       const [ox, oy] = this.fx.offset(); ctx.translate(ox, oy);
-      for (const st of this.stars) { ctx.fillStyle = st.far ? c.line : c.line2; ctx.fillRect(st.x, st.y, st.s, st.s); }
+      ctx.fillStyle = c.accent; for (const st of this.stars) { ctx.globalAlpha = st.far ? .18 : .32; ctx.fillRect(st.x, st.y, st.s, st.s); } ctx.globalAlpha = 1;
       // Suelo: la franja donde está la nave; si una cápsula la toca, ha llegado.
       const line = H - s.h - 16;
       ctx.fillStyle = c.surface2; ctx.fillRect(0, line, W, H - line); ctx.fillStyle = c.line2; ctx.fillRect(0, line, W, 2);
@@ -807,7 +807,7 @@ window.FUN = (function () {
       this.fx.draw(ctx, c.fontUi); ctx.restore();
     }
   }
-  register({ key: 'invaders', name: 'Invasión', icon: 'ship', canvas: true, lives: 3, desc: 'Las respuestas bajan en cápsulas con letra. Dispara a la correcta antes de que lleguen a tu nave.', intro: 'Diez preguntas del tema. Cada respuesta baja dentro de una cápsula con su letra; solo una es la buena. Tienes tres vidas.', needs: p => mcPool(p).length >= 6 }, Invaders);
+  register({ key: 'invaders', name: 'Invasión', icon: 'ship', canvas: true, lives: 3, desc: 'Dispara a la cápsula con la respuesta correcta.', needs: p => mcPool(p).length >= 6 }, Invaders);
   /* ===================== Ascenso: plataformas; cae sobre la letra correcta para seguir subiendo ===================== */
   class Climb extends Game {
     setup() {
@@ -819,7 +819,7 @@ window.FUN = (function () {
         { icon: 'right', label: 'Derecha', press: () => this.keys.add('TouchRight'), release: () => this.keys.delete('TouchRight') }
       ]);
     }
-    howto() { return [{ keys: ['left', 'right'], text: 'Dirige el salto en el aire. Rebotas solo al caer sobre una plataforma, y por un lado de la pantalla se sale y por el otro se entra.' }, { keys: ['A', 'B', 'C'], text: 'Cae en la plataforma con la letra de la respuesta correcta. Las equivocadas se rompen.' }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
+    howto() { return [{ keys: ['left', 'right'], text: 'Dirige el salto' }, { keys: ['A', 'B', 'C'], text: 'Cae en la letra correcta; las otras se rompen' }, { keys: ['Esc'], text: 'Pausa', kb: true }]; }
     start() {
       const { W, H } = this.cv; const pl = this.player;
       this.startPlat = { x: W / 2 - 50, y: H - 34, w: 100, neutral: true, row: null, i: -1, broken: false, fade: 1, ok: null };
@@ -894,10 +894,10 @@ window.FUN = (function () {
     }
     draw() {
       const { ctx, W, H } = this.cv; const c = this.c; const pl = this.player; const cam = this.cam;
-      ctx.save(); ctx.fillStyle = c.surface; ctx.fillRect(0, 0, W, H);
+      ctx.save(); sky(ctx, W, H, c);
       const [ox, oy] = this.fx.offset(); ctx.translate(ox, oy);
       // Pared de fondo: rejilla de puntos que sube a la mitad de velocidad que las plataformas (profundidad).
-      dotGrid(ctx, W, H, c.line, 26, 0, -cam * .5);
+      ctx.globalAlpha = .2; dotGrid(ctx, W, H, c.accent, 26, 0, -cam * .5); ctx.globalAlpha = 1;
       // Marcas de altura cada tramo.
       ctx.strokeStyle = c.line2; ctx.lineWidth = 1; ctx.setLineDash([3, 9]);
       for (let i = 0; i <= this.queue.length; i++) { const y = this.rows.length ? (this.baseY - i * this.spacing) - cam : 0; if (y < -2 || y > H + 2) continue; ctx.beginPath(); ctx.moveTo(0, Math.round(y) + .5); ctx.lineTo(W, Math.round(y) + .5); ctx.stroke(); }
@@ -930,7 +930,7 @@ window.FUN = (function () {
       this.fx.draw(ctx, c.fontUi); ctx.restore();
     }
   }
-  register({ key: 'climb', name: 'Ascenso', icon: 'stairs', canvas: true, lives: 3, desc: 'Plataformas con letra. Salta hasta la de la respuesta correcta; las otras se rompen bajo tus pies.', intro: 'Diez pisos, uno por pregunta. Rebotas sin parar: dirige el salto y cae sobre la plataforma de la respuesta correcta para subir al siguiente piso. Tres vidas.', needs: p => mcPool(p).length >= 6 }, Climb);
+  register({ key: 'climb', name: 'Ascenso', icon: 'stairs', canvas: true, lives: 3, desc: 'Salta a la plataforma de la respuesta correcta.', needs: p => mcPool(p).length >= 6 }, Climb);
   /* ===================== Carrera: elige el carril de la categoría correcta ===================== */
   class Runner extends Game {
     setup() {
@@ -940,43 +940,49 @@ window.FUN = (function () {
       this.car = { lane: 0, x: 0 }; this.lanes = 2; this.speed = 150; this.gate = null; this.idx = -1; this.setHits = new Map(); this.roadT = 0; this.marks = [];
       this.touchButtons([{ icon: 'left', label: 'Carril izquierdo', press: () => this.move(-1) }, { icon: 'right', label: 'Carril derecho', press: () => this.move(1) }]);
     }
-    howto() { return [{ keys: ['left', 'right'], text: 'Cambia de carril. En el móvil, toca el carril al que quieres ir.' }, { keys: ['1', '2', '3'], text: 'Ir directo a ese carril.', kb: true }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
+    howto() { return [{ keys: ['left', 'right'], text: 'Elige carril' }, { keys: ['1', '2', '3'], text: 'O pulsa el número del carril', kb: true }, { keys: ['road'], text: 'Cruza la puerta de su categoría' }, { keys: ['Esc'], text: 'Pausa', kb: true }]; }
     start() { this.car.x = 0; this.nextGate(); }
     nextGate() {
       this.idx++; if (this.idx >= this.queue.length) { this.finishSets(); return this.end(true); }
       const g = this.queue[this.idx]; const prev = this.idx > 0 ? this.queue[this.idx - 1].set : null;
       this.lanes = g.set.cats.length; if (this.car.lane >= this.lanes) this.car.lane = this.lanes - 1;
       if (g.set !== prev) this.banner(g.set.title, 1300);
-      this.gate = { y: -90, item: g.item, set: g.set, resolved: false, chosen: null };
+      this.gate = { y: -90, item: g.item, set: g.set, resolved: false, chosen: null, touched: false };
       this.prompt({ label: g.set.title, text: g.item.t, options: g.set.cats, letters: ['1', '2', '3'] });
       this.setMeta((this.idx + 1) + '/' + this.queue.length);
     }
-    move(d) { if (this.state !== 'running') return; const l = clamp(this.car.lane + d, 0, this.lanes - 1); if (l !== this.car.lane) { this.car.lane = l; Snd.step(); } }
+    // Quedarse quieto no es contestar: solo puntúa en el repaso la frase en la que el jugador ha elegido carril.
+    choose() { if (this.gate && !this.gate.resolved) this.gate.touched = true; }
+    move(d) { if (this.state !== 'running') return; this.choose(); const l = clamp(this.car.lane + d, 0, this.lanes - 1); if (l !== this.car.lane) { this.car.lane = l; Snd.step(); } }
     onKey(e) {
       if (e.code === 'ArrowLeft' || e.code === 'KeyA') this.move(-1);
       else if (e.code === 'ArrowRight' || e.code === 'KeyD') this.move(1);
-      else if (/^(Digit|Numpad)[123]$/.test(e.code)) { const n = +e.code.slice(-1) - 1; if (n < this.lanes && n !== this.car.lane) { this.car.lane = n; Snd.step(); } }
+      else if (/^(Digit|Numpad)[123]$/.test(e.code)) { const n = +e.code.slice(-1) - 1; if (n < this.lanes) this.choose(); if (n < this.lanes && n !== this.car.lane) { this.car.lane = n; Snd.step(); } }
     }
-    onPointer(ev) { if (ev.type === 'down') { const l = clamp(Math.floor(ev.x / (this.cv.W / this.lanes)), 0, this.lanes - 1); if (l !== this.car.lane) { this.car.lane = l; Snd.step(); } } }
+    onPointer(ev) { if (ev.type === 'down') { this.choose(); const l = clamp(Math.floor(ev.x / (this.cv.W / this.lanes)), 0, this.lanes - 1); if (l !== this.car.lane) { this.car.lane = l; Snd.step(); } } }
     tick(dt) {
       const { W, H } = this.cv; this.roadT += this.speed * dt;
       const laneW = W / this.lanes; const tx = laneW * this.car.lane + laneW / 2;
       this.car.x = this.car.x ? lerp(this.car.x, tx, Math.min(1, dt * 12)) : tx;
       const g = this.gate; if (!g) return;
-      g.y += this.speed * dt;
+      g.y += this.speed * (H / 600) * (g.item.t.length > 80 ? .8 : 1) * dt;
       const carY = H - 78;
       if (!g.resolved && g.y + 26 >= carY - 22) this.resolve(g);
       if (g.resolved && g.y > H + 60 && this.pending) { const f = this.pending; this.pending = null; f(); }
     }
     resolve(g) {
       g.resolved = true; g.chosen = this.car.lane; const ok = this.car.lane === g.item.c; const set = g.set;
-      const rec = this.setHits.get(set.id) || { hits: 0, total: 0 }; rec.total++; if (ok) rec.hits++; this.setHits.set(set.id, rec);
-      if (!set.gradeAsSet && g.item.id) this.gradeOnce(g.item.id, ok);
+      if (g.touched) {
+        const rec = this.setHits.get(set.id) || { hits: 0, total: 0 }; rec.total++; if (ok) rec.hits++; this.setHits.set(set.id, rec);
+        if (!set.gradeAsSet && g.item.id) this.gradeOnce(g.item.id, ok);
+      }
+      // El conjunto se puntúa al terminar su última frase, así salir a mitad de partida no pierde los ya completados.
+      const nx = this.queue[this.idx + 1]; if (!nx || nx.set !== set) this.finishSets(set);
       this.markLegend(g.item.c, this.car.lane);
       if (ok) {
         Snd.hit(); this.fx.burst(this.car.x, this.cv.H - 78, this.c.ok, 14, 160); this.fx.ring(this.car.x, this.cv.H - 78, this.c.ok);
         this.hit(80 + Math.round(this.speed / 6), { x: this.car.x, y: this.cv.H - 120 });
-        this.speed = Math.min(400, this.speed + 14);
+        this.speed = Math.min(260, this.speed + 12);
         this.pending = () => { if (this.state === 'running') this.nextGate(); };
       } else {
         Snd.wrong(); this.fx.shake(8); this.fx.burst(this.car.x, this.cv.H - 78, this.c.ko, 16); this.speed = Math.max(150, this.speed - 50);
@@ -985,12 +991,12 @@ window.FUN = (function () {
         this.feedback({ title: 'Carril equivocado', prompt: g.item.t, answer: set.cats[g.item.c], why }).then(() => { if (!alive) { this.finishSets(); this.end(false); } else this.nextGate(); });
       }
     }
-    finishSets() {
-      for (const s of this.sets) { const r = this.setHits.get(s.id); if (!r || !s.gradeAsSet) continue; this.gradeOnce(s.id, r.hits === r.total ? true : r.hits / r.total >= .8 ? 'partial' : false); }
+    finishSets(only) {
+      for (const s of only ? [only] : this.sets) { const r = this.setHits.get(s.id); if (!r || !s.gradeAsSet) continue; this.gradeOnce(s.id, r.hits === r.total ? true : r.hits / r.total >= .8 ? 'partial' : false); }
     }
     draw() {
       const { ctx, W, H } = this.cv; const c = this.c; const laneW = W / this.lanes;
-      ctx.save(); ctx.fillStyle = c.surface2; ctx.fillRect(0, 0, W, H);
+      ctx.save(); ctx.fillStyle = c.okSoft; ctx.fillRect(0, 0, W, H);
       const [ox, oy] = this.fx.offset(); ctx.translate(ox, oy);
       // Asfalto oscuro con bordillo y marcas de carril claras que avanzan hacia abajo.
       ctx.fillStyle = c.line; ctx.fillRect(8, 0, W - 16, H);
@@ -1022,7 +1028,7 @@ window.FUN = (function () {
       this.fx.draw(ctx, c.fontUi); ctx.restore();
     }
   }
-  register({ key: 'runner', name: 'Carrera', icon: 'road', canvas: true, lives: 3, desc: 'Cada frase pertenece a una categoría. Ponte en el carril correcto antes de llegar a la puerta.', intro: 'La carretera se divide en carriles con nombre. Lee la frase, elige el carril de su categoría y pasa por la puerta. Cuanto más aciertas, más rápido vas.', needs: p => sortSets(p).length >= 1 }, Runner);
+  register({ key: 'runner', name: 'Carrera', icon: 'road', canvas: true, lives: 3, desc: 'Cambia al carril de la categoría correcta.', needs: p => sortSets(p).length >= 1 }, Runner);
   /* ===================== Lluvia: atrapa la palabra que responde y esquiva las demás ===================== */
   class Rain extends Game {
     setup() {
@@ -1037,7 +1043,7 @@ window.FUN = (function () {
         { icon: 'right', label: 'Derecha', press: () => this.keys.add('TouchRight'), release: () => this.keys.delete('TouchRight') }
       ]);
     }
-    howto() { return [{ keys: ['left', 'right'], text: 'Mueve la cesta. En el móvil, arrastra el dedo o usa los botones.' }, { keys: ['Atrapa'], text: 'Recoge la palabra que responde al enunciado y deja caer las demás. Recoger otra cuesta una vida.' }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
+    howto() { return [{ keys: ['left', 'right'], text: 'Mueve la cesta' }, { keys: ['basket'], text: 'Atrapa solo la palabra correcta' }, { keys: ['Esc'], text: 'Pausa', kb: true }]; }
     start() { this.player.x = this.cv.W / 2; this.makeRain(); this.nextRound(); }
     onResize() { this.makeRain(); }
     // Dos capas de lluvia fina de fondo (paralaje); no interfieren con las palabras.
@@ -1091,10 +1097,10 @@ window.FUN = (function () {
     }
     draw() {
       const { ctx, W, H } = this.cv; const c = this.c; const pl = this.player;
-      ctx.save(); ctx.fillStyle = c.surface; ctx.fillRect(0, 0, W, H);
+      ctx.save(); sky(ctx, W, H, c);
       const [ox, oy] = this.fx.offset(); ctx.translate(ox, oy);
       // Lluvia de fondo y suelo.
-      if (this.rain) { ctx.lineCap = 'round'; for (const r of this.rain) { ctx.strokeStyle = r.far ? c.line : c.line2; ctx.lineWidth = r.far ? 1.5 : 2; ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x, r.y + r.len); ctx.stroke(); } }
+      if (this.rain) { ctx.lineCap = 'round'; ctx.strokeStyle = c.accent; for (const r of this.rain) { ctx.globalAlpha = r.far ? .14 : .26; ctx.lineWidth = r.far ? 1.5 : 2; ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x, r.y + r.len); ctx.stroke(); } ctx.globalAlpha = 1; }
       ctx.fillStyle = c.surface2; ctx.fillRect(0, H - 14, W, 14); ctx.fillStyle = c.line2; ctx.fillRect(0, H - 14, W, 2);
       // Palabras: cápsulas de acento con relieve; la atrapada bien en verde, la mal en rojo.
       for (const d of this.drops) {
@@ -1111,9 +1117,8 @@ window.FUN = (function () {
       this.fx.draw(ctx, c.fontUi); ctx.restore();
     }
   }
-  register({ key: 'rain', name: 'Lluvia', icon: 'basket', canvas: true, lives: 3, desc: 'Caen palabras. Atrapa con la cesta la que responde al enunciado y esquiva todas las demás.', intro: 'Diez enunciados. Las palabras caen mezcladas: solo una responde. Mueve la cesta para recogerla y aparta la cesta de las otras. Tres vidas.', needs: p => p.concepts.filter(k => k.term.length <= 26).length >= 5 || clozePool(p).filter(c => c.answer.length <= 18).length >= 5 }, Rain);
+  register({ key: 'rain', name: 'Lluvia', icon: 'basket', canvas: true, lives: 3, desc: 'Atrapa la palabra que responde y esquiva el resto.', needs: p => p.concepts.filter(k => k.term.length <= 26).length >= 5 || clozePool(p).filter(c => c.answer.length <= 18).length >= 5 }, Rain);
   /* ===================== Jefes: aventura por niveles, un jefe por sección y un jefe final ===================== */
-  const BEATEN = {}; // jefes vencidos mientras la página está abierta (sin progreso guardado, como pidió Cero)
   class Boss extends Game {
     setup() {
       const p = A.pack(); this.p = p; this.pool = mcPool(p); this.cloze = clozePool(p);
@@ -1125,20 +1130,16 @@ window.FUN = (function () {
       this.levels.push({ id: 'final', n: n + 1, name: 'Jefe final', items: this.pool, cloze: this.cloze, hp: 160, timer: 15, final: true });
       this.level = null; this.waiting = true; this.current = null; this.choiceBtns = null; this.input = null;
     }
-    howto() { return [{ keys: ['1', '2', '3', '4'], text: 'Responde con el número de la opción o tócala. Cuanto antes, más daño haces.' }, { keys: ['Intro'], text: 'Cada cuatro turnos, ataque cargado: escribe la palabra que falta y pulsa Intro.' }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
+    howto() { return [{ keys: ['1', '2', '3', '4'], text: 'Responde rápido: más daño' }, { keys: ['Intro'], text: 'Cada 4 turnos, escribe la palabra que falta' }, { keys: ['Esc'], text: 'Pausa', kb: true }]; }
     showStart() { if (this.opts.level || this.opts.skipIntro) return this.begin(); super.showStart(); }
     start() { if (this.opts.level) { const lv = this.levels.find(l => l.id === this.opts.level); if (lv) return this.beginBattle(lv); } this.chooseLevel(); }
-    beaten() { return BEATEN[A.packId()] || (BEATEN[A.packId()] = {}); }
     chooseLevel() {
       this.state = 'paused'; cancelAnimationFrame(this.rafId); this.setMeta('');
-      const done = this.beaten();
       const list = h('div', { class: 'fun-levels' });
       for (const lv of this.levels) {
-        const isDone = !!done[lv.id];
-        list.append(h('button', { class: 'fun-level' + (isDone ? ' done' : ''), type: 'button', onclick: () => this.beginBattle(lv) },
+        list.append(h('button', { class: 'fun-level', type: 'button', onclick: () => this.beginBattle(lv) },
           h('span', { class: 'fun-n', text: String(lv.n) }),
-          h('div', {}, h('div', { class: 'fun-name', text: lv.name }), h('div', { class: 'fun-sub', text: (lv.final ? 'Preguntas de todo el tema' : lv.items.length + ' preguntas') + ' · ' + lv.hp + ' de vida · ' + lv.timer + ' s por turno' })),
-          h('span', { class: 'fun-state' }, isDone ? [icon('check'), 'Derrotado'] : '')));
+          h('div', {}, h('div', { class: 'fun-name', text: lv.name }), h('div', { class: 'fun-sub', text: (lv.final ? 'Preguntas de todo el tema' : lv.items.length + ' preguntas') + ' · ' + lv.hp + ' de vida · ' + lv.timer + ' s por turno' }))));
       }
       this.showOverlay(h('div', { class: 'fun-panel' }, h('h2', { text: 'Elige un jefe' }), list, h('div', { class: 'fun-row' }, h('button', { class: 'fun-btn tertiary', type: 'button', onclick: () => this.exit() }, 'Volver'))), { kind: 'levels', focus: true });
     }
@@ -1235,17 +1236,17 @@ window.FUN = (function () {
         this.feedback({ title: 'El jefe contraataca', prompt: info.q, answer: info.a, why: info.why }).then(() => this.nextTurn());
       }
     }
-    victory() { this.beaten()[this.level.id] = true; this.end(true); }
+    victory() { this.end(true); }
     endTitle(won) { return won ? (this.level.final ? 'Jefe final derrotado' : 'Jefe derrotado') : 'Te ha vencido ' + this.level.name; }
     extraEndButtons(won) {
       if (!won) return [];
-      const done = this.beaten(); const next = this.levels.find(l => !done[l.id]);
+      const next = this.levels[this.levels.indexOf(this.level) + 1];
       if (!next) return [];
       return [h('button', { class: 'fun-btn primary', type: 'button', onclick: () => { const c = this.container; const o = this.opts; this.destroy(); startGame(this.key, c, { onExit: o.onExit, level: next.id }); } }, 'Siguiente jefe')];
     }
     restart() { const c = this.container; const o = this.opts; this.destroy(); startGame(this.key, c, { onExit: o.onExit, skipIntro: true }); }
   }
-  register({ key: 'boss', name: 'Jefes', icon: 'boss', canvas: false, lives: 0, desc: 'Un jefe por sección y un jefe final. Cada acierto rápido le quita vida; cada fallo te la quita a ti.', intro: 'Combate por turnos. Elige un jefe, responde antes de que se agote el tiempo y encadena aciertos para hacer golpes críticos. El jefe final mezcla todo el tema y tiene más vida.', needs: p => mcPool(p).length >= 8 }, Boss);
+  register({ key: 'boss', name: 'Jefes', icon: 'boss', canvas: false, lives: 0, desc: 'Combates por turnos: un jefe por sección y uno final.', needs: p => mcPool(p).length >= 8 }, Boss);
   /* ===================== Topos: toca la respuesta antes de que se esconda ===================== */
   class Moles extends Game {
     setup() {
@@ -1253,7 +1254,7 @@ window.FUN = (function () {
       this.concepts = moleConcepts(p); this.cloze = moleCloze(p); this.sorts = moleSorts(p);
       this.duration = 60; this.timeLeft = 60; this.holes = []; this.cur = null; this.lock = true; this.roundN = 0; this.roundT = 0; this.spawnT = 0; this.sinceTarget = 0; this.hits = 0; this.pending = [];
     }
-    howto() { return [{ keys: ['Toca'], text: 'Lee el enunciado y toca el topo que lleva la respuesta. Los demás, déjalos pasar.' }, { keys: ['1', '9'], text: 'Con teclado: el número del hueco, de izquierda a derecha y de arriba abajo.', kb: true }, { keys: ['60 s'], text: 'Cada acierto suma puntos; un fallo o un topo escapado resta tiempo.' }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
+    howto() { return [{ keys: ['mole'], text: 'Elige el topo con la respuesta' }, { keys: ['1', '9'], text: 'O pulsa el número de su hueco', kb: true }, { keys: ['60 s'], text: 'Los fallos restan tiempo' }, { keys: ['Esc'], text: 'Pausa', kb: true }]; }
     start() { this.build(); this.timeLeft = this.duration; this.nextRound(); }
     onKey(e) { const m = /^(Digit|Numpad)([1-9])$/.exec(e.code); if (!m) return; const n = +m[2]; this.whack(m[1] === 'Numpad' ? [6, 7, 8, 3, 4, 5, 0, 1, 2][n - 1] : n - 1); }
     build() {
@@ -1337,6 +1338,6 @@ window.FUN = (function () {
   const moleConcepts = (p) => { const k = p.concepts.filter(x => x.term.length <= 34); return k.length >= 6 ? k : []; };
   const moleCloze = (p) => { const c = clozePool(p).filter(x => x.answer.length <= 24); return c.length >= 5 ? c : []; };
   const moleSorts = (p) => p.sort.filter(s => s.cats.length >= 2 && s.items.every(it => it.t.length <= 60) && s.cats.some((_, ci) => s.items.filter(it => it.c === ci).length >= 2 && s.items.filter(it => it.c !== ci).length >= 2));
-  register({ key: 'moles', name: 'Topos', icon: 'mole', canvas: false, lives: 0, desc: 'Sesenta segundos. Los términos asoman y se esconden; toca solo el que responde al enunciado.', intro: 'Un minuto de reflejos. Arriba sale una definición, una frase con hueco o una categoría; abajo asoman topos con términos. Toca el que corresponde y deja pasar los demás. Los fallos restan tiempo.', needs: p => moleConcepts(p).length > 0 || moleCloze(p).length > 0 || moleSorts(p).length > 0 }, Moles);
+  register({ key: 'moles', name: 'Topos', icon: 'mole', canvas: false, lives: 0, desc: 'Un minuto para tocar el topo con la respuesta.', needs: p => moleConcepts(p).length > 0 || moleCloze(p).length > 0 || moleSorts(p).length > 0 }, Moles);
   return { mount, unmount, start: (key) => startGame(key, root, { onExit: renderHub }), games: GAMES, current: () => current, gradeMode: GRADE_MODE, _: { Game, register, h, icon, kbd, colors, Snd, mcPool, dealMc, sortSets, clozePool, clozeOk, LETTERS, A, wrapText, roundRect, relief, reliefRect, reliefCircle, dotGrid, clamp, lerp, rnd, reducedMotion, coarse, fshuffle } };
 })();
