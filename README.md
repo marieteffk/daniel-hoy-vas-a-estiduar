@@ -23,16 +23,26 @@ Todos los juegos comparten un calendario de repaso espaciado: lo que fallas vuel
 
 ## Añadir otro tema (otro PDF)
 
-Botón **+ Tema** en la página. Admite un PDF (se lee en el navegador con pdf.js), texto pegado o un JSON exportado desde *Gestionar temas*. Las preguntas se generan:
+Pestaña **Temas** › **Añadir tema**. Admite un PDF (se lee en el navegador con pdf.js), texto pegado o un JSON exportado desde *Gestionar temas*. Las preguntas se generan:
 
 - **Con Claude**: solo cuando la página se abre como Artifact dentro de claude.ai (usa la capacidad `sample`). En GitHub Pages esta opción aparece desactivada.
 - **Automático**: extrae definiciones («Término: definición») y pasos numerados del texto. Instantáneo pero más básico.
+
+## Diseño
+
+La web sigue el sistema visual descrito en `DISENO.md`: una columna, papel y tinta, un color de acento que elige
+el usuario (Tinta, Petróleo, Ciruela, Naranja o Carbón) y modo claro, oscuro o según el sistema, todo desde el botón
+de la cabecera. Tipografía Nunito y Nunito Sans, iconos SVG propios, botones con relieve y sin sombras difusas,
+degradados ni emojis. La navegación tiene cuatro pestañas: **Repasar** (inicio y juegos), **FUN** (juegos tipo
+videojuego, módulo `src/fun.js`), **Temas** (gestionar y añadir temas) y **Método** (la investigación detrás de los juegos).
 
 ## Estructura
 
 - `index.html`: la página completa, lista para servir (GitHub Pages).
 - `src/page.html`: estilos y marcado. `src/pack-tema2.js`: banco de contenidos del Tema 2. `src/app.js`: lógica de los juegos.
-- `src/build.sh`: reconstruye `index.html` a partir de los tres ficheros.
+- `src/fun.js` (opcional): pestaña FUN. Define `window.FUN = { mount(root, api), unmount() }` dentro de una IIFE; el contrato está en `DISENO.md`.
+- `src/build.sh`: comprueba la sintaxis y reconstruye `index.html` a partir de los ficheros anteriores.
+- `DISENO.md`: colores, tipografía, espaciado, componentes y el contrato del módulo FUN.
 - `.github/workflows/pages.yml`: con cada cambio en `main` copia `index.html` a la rama `gh-pages`, que es la que publica GitHub Pages.
 
 ## Por qué estos juegos
