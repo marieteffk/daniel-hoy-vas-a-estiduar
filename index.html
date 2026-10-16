@@ -1694,8 +1694,8 @@ boot();
 </script>
 <script>
 /* ===================== FUN: juegos de acción con el contenido del tema =====================
-   Módulo independiente. build.sh lo concatena detrás de app.js dentro del mismo <script>, por eso
-   todo vive dentro de una función y solo se expone window.FUN = { mount(root, api), unmount(), ... }.
+   Módulo independiente. build.sh lo mete en su propia etiqueta <script> detrás de la de app.js (si fallara, no se cae
+   la web de estudio); todo vive dentro de una función y solo se expone window.FUN = { mount(root, api), unmount(), ... }.
    api (lo pasa app.js al abrir la pestaña): { el, pack, allItems, pick, shuffle, sample, norm, secName,
    grade, toast, LS, colors, goHome, state }. Si falta algo se usan las funciones globales o un sustituto. */
 window.FUN = (function () {
@@ -1770,8 +1770,8 @@ window.FUN = (function () {
 .fun-legend .fun-opt.ko { color: var(--ko); }
 .fun-legend .fun-opt.dim { color: var(--ink-2); }
 .fun-key { flex: 0 0 auto; display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 6px; background: var(--surface-2); font-size: .8125rem; font-weight: 600; line-height: 1; color: var(--ink-2); position: relative; top: 2px; }
-.fun-opt.ok .fun-key { background: var(--ok); color: #fff; }
-.fun-opt.ko .fun-key { background: var(--ko); color: #fff; }
+.fun-opt.ok .fun-key { background: var(--ok); color: var(--paper); }
+.fun-opt.ko .fun-key { background: var(--ko); color: var(--paper); }
 .fun-kbd { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 6px; background: var(--surface-2); font-size: .8125rem; font-weight: 600; line-height: 1; color: var(--ink-2); vertical-align: middle; }
 .fun-kbd svg { width: 16px; height: 16px; }
 
@@ -1844,9 +1844,9 @@ window.FUN = (function () {
 .fun-choice:active:not([disabled]) { transform: translateY(2px); box-shadow: none; }
 .fun-choice.ok { border-color: var(--ok); background: var(--ok-soft); box-shadow: 0 2px 0 var(--ok); animation: fun-pop 220ms ease-out; }
 @keyframes fun-pop { 50% { transform: scale(1.015); } }
-.fun-choice.ok .fun-key { background: var(--ok); color: #fff; }
+.fun-choice.ok .fun-key { background: var(--ok); color: var(--paper); }
 .fun-choice.ko { border-color: var(--ko); background: var(--ko-soft); box-shadow: 0 2px 0 var(--ko); }
-.fun-choice.ko .fun-key { background: var(--ko); color: #fff; }
+.fun-choice.ko .fun-key { background: var(--ko); color: var(--paper); }
 .fun-choice[disabled] { cursor: default; }
 .fun-choice .fun-key { top: 0; }
 .fun-choices.two .fun-choice { justify-content: center; font-weight: 600; }
@@ -1869,7 +1869,8 @@ window.FUN = (function () {
 /* ---- Topos (DOM) ---- */
 .fun-moles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px; }
 .fun-hole { position: relative; aspect-ratio: 1.25; border-radius: var(--r-s, 10px); background: var(--surface-2); overflow: hidden; }
-.fun-mole { position: absolute; inset: 0; display: grid; place-items: center; padding: 8px; text-align: center; border: 0; border-radius: var(--r-s, 10px); background: var(--accent); color: var(--accent-ink); box-shadow: inset 0 -3px 0 var(--accent-edge, var(--accent)); font-weight: 600; font-size: .9375rem; line-height: 1.2; transform: translateY(105%); transition: transform 160ms ease-out, background 160ms ease-out; word-break: break-word; }
+.fun-mole { position: absolute; inset: 0; display: grid; place-items: center; padding: 8px; text-align: center; border: 0; border-radius: var(--r-s, 10px); background: var(--accent); color: var(--accent-ink); box-shadow: inset 0 -3px 0 var(--accent-edge, var(--accent)); font-weight: 600; font-size: .9375rem; line-height: 1.2; transform: translateY(105%); transition: transform 160ms ease-out, background 160ms ease-out; overflow-wrap: anywhere; hyphens: auto; }
+@media (max-width: 420px) { .fun-mole { padding: 6px 4px; font-size: .8125rem; } .fun-mole.long { font-size: .75rem; } }
 .fun-mole.up { transform: translateY(0); }
 .fun-mole.long { font-size: .8125rem; font-weight: 400; }
 .fun-mole.ok { background: var(--ok); box-shadow: none; animation: fun-pop 220ms ease-out; }
@@ -1880,6 +1881,24 @@ window.FUN = (function () {
 .fun-timebar .fun-track i { transition: none; border-radius: 4px; }
 .fun-timebar.low .fun-track i { background: var(--ko); }
 .fun-timebar span { font-size: .8125rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+/* ---- Pantallas pequeñas: el panel cabe en el lienzo y no repite el enunciado que ya está encima ---- */
+@media (max-width: 420px), (max-height: 760px) {
+  .fun-overlay { padding: 16px; }
+  .fun-overlay .fun-panel { gap: 10px; }
+  .fun-overlay .fun-panel > p.ink, .fun-overlay .fun-intro { display: none; }
+  .fun-result .fun-big { font-size: 3rem; }
+  .fun-missed { max-height: 120px; }
+  .fun-answer b { font-size: 1.125rem; }
+  .fun-fb > .fun-row { order: 1; } .fun-fb > .fun-why { order: 2; } /* «Seguir» a la vista; el porqué debajo */
+}
+@media (max-width: 420px) {
+  .fun-prompt .fun-q { font-size: 1.1875rem; }
+  .fun-arena { min-height: 0; padding: 12px 12px 0; }
+  .fun-sprite { width: 56px; height: 56px; }
+  .fun-fighter.boss .fun-sprite { width: 72px; height: 72px; }
+  .fun-turn { padding: 12px; }
+}
 
 /* ---- Táctil y movimiento reducido (DISENO.md) ---- */
 @media (hover: none) and (pointer: coarse) {
@@ -1978,11 +1997,8 @@ window.FUN = (function () {
     close: '<path d="M6 6l12 12M18 6L6 18"/>',
     back: '<path d="M15 5l-7 7 7 7"/>',
     check: '<path d="M5 12l5 5 9-10"/>',
-    lock: '<rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
-    star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3z"/>',
     left: '<path d="M15 5l-7 7 7 7"/>', right: '<path d="M9 5l7 7-7 7"/>', up: '<path d="M5 15l7-7 7 7"/>',
-    fire: '<path d="M12 4v10"/><path d="M8 10l4-4 4 4"/><path d="M6 20h12"/>',
-    flag: '<path d="M5 21V4"/><path d="M5 4h12l-2 4 2 4H5"/>'
+    fire: '<path d="M12 4v10"/><path d="M8 10l4-4 4 4"/><path d="M6 20h12"/>'
   };
   const icon = (name, cls) => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('fill', 'none'); s.setAttribute('stroke', 'currentColor'); s.setAttribute('stroke-width', '2'); s.setAttribute('stroke-linecap', 'round'); s.setAttribute('stroke-linejoin', 'round'); s.setAttribute('aria-hidden', 'true'); if (cls) s.setAttribute('class', cls); s.innerHTML = ICON[name] || ''; return s; };
   const kbd = (label) => { const k = h('span', { class: 'fun-kbd' }); if (ICON[label]) k.append(icon(label)); else k.textContent = label; return k; };
@@ -1991,24 +2007,26 @@ window.FUN = (function () {
   const Snd = (() => {
     let ctx = null; let on = LS.get('ra.fun.sound', true) !== false;
     const ensure = () => { if (!ctx) { try { ctx = new (G.AudioContext || G.webkitAudioContext)(); } catch { ctx = null; } } if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => { }); return ctx; };
-    const tone = (f, dur, type, vol, slide) => {
+    // `at` retrasa la nota en el reloj del audio (segundos): así las notas segundas y las secuencias se programan
+    // de golpe y no queda ningún temporizador que suene después de salir del juego.
+    const tone = (f, dur, type, vol, slide, at) => {
       if (!on) return; const c = ensure(); if (!c) return;
       try {
-        const o = c.createOscillator(); const g = c.createGain(); const t = c.currentTime;
+        const o = c.createOscillator(); const g = c.createGain(); const t = c.currentTime + (at || 0);
         o.type = type || 'square'; o.frequency.setValueAtTime(f, t);
         if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, f + slide), t + dur);
         g.gain.setValueAtTime(vol || .06, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
         o.connect(g).connect(c.destination); o.start(t); o.stop(t + dur + .03);
       } catch { }
     };
-    const seq = (notes, step, dur, type, vol) => notes.forEach((f, i) => setTimeout(() => tone(f, dur, type, vol), i * step));
+    const seq = (notes, step, dur, type, vol) => notes.forEach((f, i) => tone(f, dur, type, vol, 0, i * step / 1000));
     return {
       get on() { return on; },
       // Safari e iOS solo arrancan el AudioContext dentro de un gesto del usuario: se llama desde los clics y teclas del juego.
       unlock() { if (on) ensure(); },
       toggle() { on = !on; LS.set('ra.fun.sound', on); if (on) { ensure(); tone(660, .08, 'sine', .05, 200); } return on; },
       shoot: () => tone(900, .07, 'square', .035, -600),
-      hit: () => { tone(540, .09, 'triangle', .07); setTimeout(() => tone(810, .12, 'triangle', .07), 60); },
+      hit: () => { tone(540, .09, 'triangle', .07); tone(810, .12, 'triangle', .07, 0, .06); },
       wrong: () => tone(170, .28, 'sawtooth', .06, -90),
       tap: () => tone(700, .05, 'sine', .05, 150),
       step: () => tone(420, .04, 'triangle', .03),
@@ -2016,7 +2034,7 @@ window.FUN = (function () {
       win: () => seq([523, 659, 784, 1046, 1318], 110, .18, 'triangle', .06),
       lose: () => seq([392, 330, 262], 190, .26, 'triangle', .06),
       tick: () => tone(1300, .03, 'square', .025),
-      crit: () => { tone(300, .12, 'sawtooth', .07, 500); setTimeout(() => tone(1200, .15, 'square', .05, 300), 90); }
+      crit: () => { tone(300, .12, 'sawtooth', .07, 500); tone(1200, .15, 'square', .05, 300, .09); }
     };
   })();
 
@@ -2026,11 +2044,11 @@ window.FUN = (function () {
     const want = new Set(kinds || ['q', 'k', 'tf']); const out = [];
     if (want.has('q')) for (const q of p.questions) if (q.options && q.options.length >= 2 && q.options.length <= 4) out.push({ id: q.id, sec: q.sec, kind: 'q', prompt: q.q, options: q.options.slice(), a: q.a, why: q.why || '', answer: q.options[q.a] });
     if (want.has('k') && p.concepts.length >= 4) for (const k of p.concepts) {
-      const same = p.concepts.filter(x => x.id !== k.id && x.sec === k.sec && fnorm(x.term) !== fnorm(k.term));
-      const others = fshuffle(same).slice(0, 3);
-      for (const x of fshuffle(p.concepts)) { if (others.length >= 3) break; if (x.id !== k.id && !others.includes(x) && fnorm(x.term) !== fnorm(k.term)) others.push(x); }
+      // Primero términos de la misma sección; nunca dos opciones con el mismo texto (temas importados con términos repetidos).
+      const seen = new Set([fnorm(k.term)]); const others = [];
+      for (const x of [...fshuffle(p.concepts.filter(x => x.sec === k.sec)), ...fshuffle(p.concepts)]) { if (others.length >= 3) break; const n = fnorm(x.term); if (x.id === k.id || seen.has(n)) continue; seen.add(n); others.push(x); }
       if (others.length < 2) continue;
-      out.push({ id: k.id, sec: k.sec, kind: 'k', prompt: k.def, label: 'Qué término es', options: [k.term, ...others.map(o => o.term)], a: 0, why: k.term + ': ' + k.def, answer: k.term });
+      out.push({ id: k.id, sec: k.sec, kind: 'k', prompt: k.def, label: 'Qué término es', options: [k.term, ...others.map(o => o.term)], a: 0, why: '', answer: k.term });
     }
     if (want.has('tf')) for (const t of p.tf) out.push({ id: t.id, sec: t.sec, kind: 'tf', prompt: t.s, label: 'Verdadero o falso', options: ['Verdadero', 'Falso'], a: t.a ? 0 : 1, why: (t.a ? 'Es verdadero. ' : 'Es falso. ') + (t.why || ''), answer: t.a ? 'Verdadero' : 'Falso' });
     return out;
@@ -2049,25 +2067,29 @@ window.FUN = (function () {
     return sets;
   }
   function clozePool(p) { return p.cloze.filter(c => c.text && c.text.includes('___') && c.answer).map(c => ({ id: c.id, sec: c.sec, text: c.text, answer: c.answer, alt: c.alt || [], hint: c.hint || '' })); }
+  // Textos distintos entre sí y distintos de lo que ya vale como respuesta (texto normalizado).
+  function distinct(list, exclude) { const seen = new Set((exclude || []).map(fnorm)); return list.filter(t => { const n = fnorm(t); if (!n || seen.has(n)) return false; seen.add(n); return true; }); }
   function clozeOk(c, typed) { const t = A.norm(typed); if (!t) return false; return [c.answer, ...(c.alt || [])].some(a => A.norm(a) === t); }
 
   /* ---------- Récords (lo único que se guarda: Cero no quiere progreso de jugador) ---------- */
   function finishGame(s) {
     const key = 'ra.fun.best.' + A.packId() + '.' + s.key; const prev = LS.get(key, null);
-    const record = !prev || s.score > prev.score; if (record) LS.set(key, { score: s.score, date: Date.now() });
+    const record = s.score > 0 && (!prev || s.score > prev.score); if (record) LS.set(key, { score: s.score, date: Date.now() });
     return { record, prev };
   }
   const best = (key) => LS.get('ra.fun.best.' + A.packId() + '.' + key, null);
 
   /* ---------- Lienzo: tamaño según el sitio disponible, escala según el píxel del dispositivo ---------- */
-  function makeCanvas(stage) {
+  // below(): alto de lo que va debajo del lienzo (botones táctiles). o.shrinkOnly: en partida solo encoge, para que no baile.
+  function makeCanvas(stage, below) {
     const c = document.createElement('canvas'); c.setAttribute('aria-hidden', 'true'); stage.append(c);
     const cv = { el: c, ctx: c.getContext('2d'), W: 0, H: 0, dpr: 1 };
-    cv.resize = (wanted) => {
+    cv.resize = (o) => {
       const w = Math.max(240, Math.round(stage.clientWidth || 360));
-      const top = stage.getBoundingClientRect().top; const extra = (wanted && wanted.extra) || 0;
+      const top = stage.getBoundingClientRect().top; const extra = below ? below() : 0;
       const avail = G.innerHeight - Math.max(0, top) - extra - 12;
-      const hgt = Math.round(clamp(avail, 380, Math.min(640, w * 1.5)));
+      let hgt = Math.round(clamp(avail, G.innerHeight < 800 ? 260 : 300, Math.min(640, w * 1.5)));
+      if (o && o.shrinkOnly && cv.H && w === cv.W) hgt = Math.min(hgt, cv.H);
       const dpr = Math.min(2, G.devicePixelRatio || 1);
       if (w === cv.W && hgt === cv.H && dpr === cv.dpr) return false;
       cv.W = w; cv.H = hgt; cv.dpr = dpr; c.width = Math.round(w * dpr); c.height = Math.round(hgt * dpr); c.style.height = hgt + 'px';
@@ -2119,7 +2141,7 @@ window.FUN = (function () {
       this.lives = def.lives == null ? 3 : def.lives; this.maxLives = this.lives;
       this.score = 0; this.combo = 0; this.state = 'idle'; this.rafId = 0; this.last = 0;
       this.stats = { key: def.key, answered: 0, correct: 0, wrong: 0, maxCombo: 0, score: 0, won: false, missed: [], graded: new Set(), t0: 0 };
-      this.keys = new Set(); this.fx = makeFx(); this.resumeAfterOverlay = false; this.overlay = null;
+      this.keys = new Set(); this.fx = makeFx(); this.resumeAfterOverlay = false; this.overlay = null; this.timers = [];
     }
     // Monta la pantalla dentro de root y enseña la portada con las instrucciones.
     mount(container) {
@@ -2140,25 +2162,46 @@ window.FUN = (function () {
         this.promptEl, this.stage, this.touchEl);
       container.append(this.rootEl);
       this.renderLives();
-      if (this.def.canvas) { this.cv = makeCanvas(this.stage); this.cv.resize(); this.ro = new ResizeObserver(() => { if (this.cv.resize()) this.onResize && this.onResize(); }); this.ro.observe(this.stage); }
+      // aria-live="off": main#view es una región viva y si no leería cada cambio de marcador y de reloj; el enunciado tiene la suya.
+      this.rootEl.setAttribute('aria-live', 'off');
+      if (this.def.canvas) { this.cv = makeCanvas(this.stage, () => (this.touchEl.offsetHeight ? this.touchEl.offsetHeight + 12 : 0)); this.cv.resize(); this.ro = new ResizeObserver(() => this.refit()); this.ro.observe(this.stage); }
       else this.stage.style.minHeight = '400px';
       // Si app.js vacía el contenedor sin llamar a FUN.unmount(), el juego se retira solo.
       this.watch = setInterval(() => { if (!this.rootEl.isConnected) this.destroy(); }, 500);
       this.onKeyDown = (e) => this.keyDown(e); this.onKeyUp = (e) => { this.keys.delete(e.code); };
       this.onVis = () => { if (document.hidden && this.state === 'running') this.pause(); };
-      this.onWinResize = () => { if (this.cv && this.cv.resize()) this.onResize && this.onResize(); };
-      G.addEventListener('keydown', this.onKeyDown); G.addEventListener('keyup', this.onKeyUp); document.addEventListener('visibilitychange', this.onVis); G.addEventListener('resize', this.onWinResize);
+      this.onWinResize = () => this.refit();
+      this.onBlur = () => this.keys.clear(); // si la ventana pierde el foco con una flecha pulsada, el keyup no llega
+      G.addEventListener('keydown', this.onKeyDown); G.addEventListener('keyup', this.onKeyUp); document.addEventListener('visibilitychange', this.onVis); G.addEventListener('resize', this.onWinResize); G.addEventListener('blur', this.onBlur);
       this.bindPointer();
       this.c = c; this.setup();
+      this.fit(true);
       this.showStart();
     }
-    setup() { } tick() { } draw() { } onKey() { } onPointer() { } howto() { return []; } onResize() { } onTheme() { this.c = colors(); if (this.state !== 'running') this.draw(); }
+    // Ajusta el lienzo al hueco libre; si aun así el juego no cabe, sube la página lo justo (sin esconder la cabecera del juego).
+    fit(grow) {
+      if (this.state === 'dead' || !this.rootEl.isConnected) return;
+      const o = { shrinkOnly: !grow };
+      let changed = this.cv ? this.cv.resize(o) : false;
+      const r = this.rootEl.getBoundingClientRect(); const over = r.bottom - G.innerHeight + 8;
+      if (over > 0 && r.top > 0) { G.scrollTo({ top: G.scrollY + Math.min(r.top, over), behavior: 'instant' }); if (this.cv) changed = this.cv.resize(o) || changed; }
+      if (changed) { this.onResize(); if (this.state !== 'idle') this.draw(); }
+    }
+    refit() { if (this.cv && this.state !== 'dead' && this.cv.resize()) { this.onResize(); if (this.state !== 'idle') this.draw(); } }
+    // Espera en tiempo de juego: se congela con la pausa (o con la pestaña oculta) y se anula al salir.
+    later(sec, fn) { this.timers.push({ t: sec, fn }); }
+    runTimers(dt) {
+      if (!this.timers.length) return;
+      const due = []; this.timers = this.timers.filter(x => { x.t -= dt; if (x.t > 0) return true; due.push(x.fn); return false; });
+      for (const fn of due) if (this.state === 'running') fn();
+    }
+    setup() { } tick() { } draw() { } onKey() { } onPointer() { } howto() { return []; } onResize() { } onTheme() { this.c = colors(); if (this.state !== 'running' && this.state !== 'idle' && this.state !== 'dead') this.draw(); }
     // --- portada ---
     showStart() {
       const b = best(this.key);
-      const rows = this.howto().map(r => h('div', { class: 'fun-h' }, h('span', { class: 'fun-keys' }, r.keys.map(kbd)), h('span', { text: r.text })));
+      const rows = this.howto().filter(r => !(r.kb && coarse())).map(r => h('div', { class: 'fun-h' }, h('span', { class: 'fun-keys' }, r.keys.map(kbd)), h('span', { text: r.text })));
       this.showOverlay(h('div', { class: 'fun-panel' },
-        h('h2', { text: this.def.name }), h('p', { text: this.def.intro }),
+        h('h2', { text: this.def.name }), h('p', { class: 'fun-intro', text: this.def.intro }),
         h('div', { class: 'fun-howto' }, rows),
         b ? h('p', { class: 'fun-num', text: 'Tu récord: ' + b.score }) : null,
         h('div', { class: 'fun-row' }, h('button', { class: 'fun-btn primary', type: 'button', onclick: () => this.begin() }, icon('play'), 'Jugar'), h('button', { class: 'fun-btn tertiary', type: 'button', onclick: () => this.exit() }, 'Volver'))
@@ -2174,7 +2217,7 @@ window.FUN = (function () {
         if (this.state !== 'running') return;
         if (!this.rootEl.isConnected) { this.destroy(); return; }
         const dt = Math.min(.05, Math.max(0, (t - this.last) / 1000)); this.last = t;
-        this.fx.update(dt); this.tick(dt); this.draw();
+        this.fx.update(dt); this.tick(dt); this.runTimers(dt); this.draw();
         this.rafId = requestAnimationFrame(step);
       };
       this.rafId = requestAnimationFrame(step);
@@ -2224,6 +2267,7 @@ window.FUN = (function () {
         o.options.forEach((t, i) => lg.append(h('div', { class: 'fun-opt', 'data-i': i }, h('span', { class: 'fun-key', text: o.letters ? o.letters[i] : LETTERS[i] }), h('span', { text: t }))));
         this.promptEl.append(lg); this.legendEl = lg;
       } else this.legendEl = null;
+      this.fit(false);
     }
     markLegend(correct, chosen) { if (!this.legendEl) return; [...this.legendEl.children].forEach((n, i) => { n.classList.toggle('ok', i === correct); n.classList.toggle('ko', chosen != null && i === chosen && i !== correct); n.classList.toggle('dim', i !== correct && i !== chosen); }); }
     // Tarjeta de corrección tras un fallo: para el juego hasta que el jugador sigue. Devuelve una promesa.
@@ -2231,11 +2275,11 @@ window.FUN = (function () {
       return new Promise(res => {
         this.pause('silent');
         const go = () => { this.overlayKind = null; this.resume(); res(); };
-        this.showOverlay(h('div', { class: 'fun-panel' },
+        this.showOverlay(h('div', { class: 'fun-panel fun-fb' },
           h('h2', { text: o.title || 'No era esa' }),
           o.prompt ? h('p', { class: 'ink', text: o.prompt }) : null,
           h('div', { class: 'fun-answer' }, h('span', { class: 'fun-label', text: o.answerLabel || 'Respuesta correcta' }), h('b', { class: 'ok', text: o.answer })),
-          o.why ? h('p', { text: o.why }) : null,
+          o.why ? h('p', { class: 'fun-why', text: o.why }) : null,
           h('div', { class: 'fun-row' }, h('button', { class: 'fun-btn primary', type: 'button', onclick: go }, 'Seguir'))
         ), { kind: 'feedback', focus: true });
         this.continueAction = go;
@@ -2248,7 +2292,7 @@ window.FUN = (function () {
     }
     // --- final ---
     end(won) {
-      if (this.state === 'over') return; this.state = 'over'; cancelAnimationFrame(this.rafId);
+      if (this.state === 'over' || this.state === 'dead') return; this.state = 'over'; cancelAnimationFrame(this.rafId);
       this.stats.won = !!won; this.stats.score = this.score; this.stats.seconds = Math.round((now() - this.stats.t0) / 1000);
       const r = finishGame(this.stats); this.result = r;
       if (won) Snd.win(); else Snd.lose();
@@ -2261,6 +2305,7 @@ window.FUN = (function () {
         missed,
         h('div', { class: 'fun-row' }, extra, h('button', { class: 'fun-btn' + (extra.length ? '' : ' primary'), type: 'button', onclick: () => this.restart() }, 'Otra partida'), h('button', { class: 'fun-btn' + (extra.length ? ' tertiary' : ''), type: 'button', onclick: () => this.exit() }, 'Volver a FUN'))
       ), { kind: 'over', focus: true });
+      this.promptEl.replaceChildren(); this.legendEl = null; this.fit(true);
       this.startAction = () => this.restart();
     }
     endTitle(won) { return won ? 'Partida completada' : 'Fin de la partida'; }
@@ -2269,20 +2314,24 @@ window.FUN = (function () {
     exit() { const o = this.opts; this.destroy(); if (o.onExit) o.onExit(); }
     destroy() {
       this.state = 'dead'; cancelAnimationFrame(this.rafId);
-      G.removeEventListener('keydown', this.onKeyDown); G.removeEventListener('keyup', this.onKeyUp); document.removeEventListener('visibilitychange', this.onVis); G.removeEventListener('resize', this.onWinResize);
-      if (this.ro) this.ro.disconnect(); clearInterval(this.watch); this.fx.clear(); this.teardown && this.teardown();
+      G.removeEventListener('keydown', this.onKeyDown); G.removeEventListener('keyup', this.onKeyUp); document.removeEventListener('visibilitychange', this.onVis); G.removeEventListener('resize', this.onWinResize); G.removeEventListener('blur', this.onBlur);
+      this.timers = []; if (this.ro) this.ro.disconnect(); clearInterval(this.watch); this.fx.clear(); this.teardown && this.teardown();
       if (current === this) current = null;
     }
     // --- capas ---
-    showOverlay(panel, o) { this.hideOverlay(); this.overlayKind = (o && o.kind) || 'start'; this.overlay = h('div', { class: 'fun-overlay', role: 'dialog' }, panel); this.stage.append(this.overlay); if (o && o.focus) { const b = this.overlay.querySelector('button.primary, button'); if (b) setTimeout(() => b.focus({ preventScroll: true }), 0); } }
-    hideOverlay() { if (this.overlay) { this.overlay.remove(); this.overlay = null; } this.overlayKind = null; }
+    showOverlay(panel, o) { this.hideOverlay(); this.overlayKind = (o && o.kind) || 'start'; this.overlay = h('div', { class: 'fun-overlay', role: 'dialog' }, panel); this.stage.append(this.overlay);
+      // Sin lienzo (Jefes, Topos) el escenario mide lo que su contenido: si el panel es más alto, se estira mientras está a la vista.
+      if (!this.cv && this.overlay.scrollHeight > this.stage.clientHeight) { this.overMin = this.stage.style.minHeight; this.stage.style.minHeight = (this.overlay.scrollHeight + this.stage.offsetHeight - this.stage.clientHeight) + 'px'; }
+      if (o && o.focus) { const b = this.overlay.querySelector('button.primary, button'); if (b) setTimeout(() => b.focus({ preventScroll: true }), 0); } }
+    hideOverlay() { if (this.overlay) { this.overlay.remove(); this.overlay = null; } this.overlayKind = null; if (this.overMin != null) { this.stage.style.minHeight = this.overMin; this.overMin = null; } }
     // --- entrada ---
     keyDown(e) {
       Snd.unlock();
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) { if (e.key === 'Escape') { e.target.blur(); } return; }
       if (e.key === 'Escape') { e.preventDefault(); if (this.state === 'running') this.pause(); else if (this.overlayKind === 'pause') this.resume(); return; }
+      if (this.overlayKind && this.state !== 'running' && (e.key === 'Enter' || e.key === ' ') && e.target && e.target.tagName === 'BUTTON') return;
       if (this.overlayKind === 'feedback' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); this.continueAction && this.continueAction(); return; }
-      if ((this.overlayKind === 'start' || this.overlayKind === 'over') && (e.key === 'Enter' || e.key === ' ')) { if (e.target && e.target.tagName === 'BUTTON' && e.target !== this.overlay.querySelector('button.primary')) return; e.preventDefault(); this.startAction && this.startAction(); return; }
+      if ((this.overlayKind === 'start' || this.overlayKind === 'over') && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); this.startAction && this.startAction(); return; }
       if (this.overlayKind === 'pause' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); this.resume(); return; }
       if (this.state !== 'running') return;
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(e.key)) e.preventDefault();
@@ -2353,7 +2402,7 @@ window.FUN = (function () {
         { icon: 'right', label: 'Derecha', press: () => this.keys.add('TouchRight'), release: () => this.keys.delete('TouchRight') }
       ]);
     }
-    howto() { return [{ keys: ['left', 'right'], text: 'Mueve la nave. En el móvil, arrastra el dedo o usa los botones.' }, { keys: ['Espacio'], text: 'Dispara a la cápsula con la letra de la respuesta correcta. En el móvil, toca la pantalla.' }, { keys: ['Esc'], text: 'Pausa.' }]; }
+    howto() { return [{ keys: ['left', 'right'], text: 'Mueve la nave. En el móvil, arrastra el dedo o usa los botones.' }, { keys: ['Espacio'], text: 'Dispara a la cápsula con la letra de la respuesta correcta. En el móvil, toca la pantalla.' }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
     start() { this.ship.x = this.cv.W / 2; this.makeStars(); this.nextRound(); }
     onResize() { this.makeStars(); }
     makeStars() { const { W, H } = this.cv; this.stars = Array.from({ length: 40 }, () => ({ x: rnd(0, W), y: rnd(0, H), s: rnd(1, 2.2), v: rnd(12, 30) })); }
@@ -2397,7 +2446,7 @@ window.FUN = (function () {
         const bonus = Math.max(0, Math.round(60 - this.roundT * 5));
         this.hit(100 + bonus, { x: p.x, y: p.y }); this.gradeOnce(q.id, true); this.markLegend(q.a, p.i);
         for (const o of this.pods) if (!o.dead) { o.dead = true; o.fade = .6; }
-        setTimeout(() => { if (this.state === 'running') this.nextRound(); }, 600);
+        this.later(.6, () => this.nextRound());
       } else {
         p.dead = true; p.ok = false; Snd.wrong(); this.fx.burst(p.x, p.y, this.c.ko, 12); this.fx.shake(6); this.markLegend(q.a, p.i); this.gradeOnce(q.id, false);
         const alive = this.miss({ q: q.prompt, a: q.answer });
@@ -2444,7 +2493,7 @@ window.FUN = (function () {
         { icon: 'right', label: 'Derecha', press: () => this.keys.add('TouchRight'), release: () => this.keys.delete('TouchRight') }
       ]);
     }
-    howto() { return [{ keys: ['left', 'right'], text: 'Dirige el salto en el aire. Rebotas solo al caer sobre una plataforma, y por un lado de la pantalla se sale y por el otro se entra.' }, { keys: ['A', 'B', 'C'], text: 'Cae en la plataforma con la letra de la respuesta correcta. Las equivocadas se rompen.' }, { keys: ['Esc'], text: 'Pausa.' }]; }
+    howto() { return [{ keys: ['left', 'right'], text: 'Dirige el salto en el aire. Rebotas solo al caer sobre una plataforma, y por un lado de la pantalla se sale y por el otro se entra.' }, { keys: ['A', 'B', 'C'], text: 'Cae en la plataforma con la letra de la respuesta correcta. Las equivocadas se rompen.' }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
     start() {
       const { W, H } = this.cv; const pl = this.player;
       this.startPlat = { x: W / 2 - 50, y: H - 34, w: 100, neutral: true, row: null, i: -1, broken: false, fade: 1, ok: null };
@@ -2454,27 +2503,32 @@ window.FUN = (function () {
         row.plats = q.options.map((_, k) => ({ i: k, x: slot * order[k] + (slot - w) / 2 + rnd(-5, 5), y, w, row, broken: false, fade: 1, ok: null }));
         return row;
       });
-      this.goalY = H - 34 - (this.queue.length + 1) * this.spacing;
+      this.goalY = H - 34 - (this.queue.length + 1) * this.spacing; this.baseY = H - 34; this.prevH = H;
       pl.x = W / 2; pl.y = this.startPlat.y - pl.h; pl.vy = -this.jump; pl.vx = 0; this.cam = 0; this.lastSafe = this.startPlat; this.round = -1;
       this.nextRound();
     }
-    onResize() { /* las plataformas se recolocan proporcionalmente al nuevo ancho */
-      const { W } = this.cv; for (const r of this.rows) { const n = r.q.options.length; const slot = W / n; const w = Math.min(100, slot - 16); r.plats.forEach((p, k) => { const c = (p.x + p.w / 2) / (this.prevW || W); p.x = clamp(c * W - w / 2, 4, W - w - 4); p.w = w; }); }
+    onResize() { /* las plataformas se recolocan proporcionalmente al nuevo ancho; si cambia el alto, la cámara deja el suelo abajo */
+      const { W, H } = this.cv; if (this.prevH) this.cam += this.prevH - H; this.prevH = H;
+      if (!this.startPlat) { this.prevW = W; return; } // en la portada aún no hay plataformas
+      for (const r of this.rows) { const n = r.q.options.length; const slot = W / n; const w = Math.min(100, slot - 16); r.plats.forEach((p, k) => { const c = (p.x + p.w / 2) / (this.prevW || W); p.x = clamp(c * W - w / 2, 4, W - w - 4); p.w = w; }); }
       this.startPlat.x = W / 2 - 50; this.prevW = W;
     }
     nextRound() {
       this.round++; if (this.round >= this.queue.length) return this.end(true);
       const q = this.rows[this.round].q; this.busy = false;
+      // Tiempo para leer: mientras dura, el salto va a cámara lenta (misma trayectoria). Si no, el rebote caía solo en la plataforma
+      // de encima a los 0,8 s, sin tocar nada (en 390 px pasaba en 3 de cada 4 partidas) y contaba como respuesta.
+      this.roundT = 0; this.readT = 1.2 + Math.min(2.8, (q.prompt.length + q.options.join(' ').length) / 70);
       this.prompt({ label: q.label || A.secName(q.sec), text: q.prompt, options: q.options });
       this.setMeta((this.round + 1) + '/' + this.queue.length);
     }
     onPointer(ev) { if (ev.type === 'down' || ev.type === 'move') this.touchDir = ev.x < this.cv.W / 2 ? -1 : 1; else if (ev.type === 'up') this.touchDir = 0; }
     tick(dt) {
       if (this.busy) return;
-      const { W, H } = this.cv; const pl = this.player; if (!this.prevW) this.prevW = W;
+      const { W, H } = this.cv; const pl = this.player; if (!this.prevW) this.prevW = W; this.roundT += dt; const vdt = this.roundT < this.readT ? dt * .3 : dt;
       let dir = 0; if (this.keys.has('ArrowLeft') || this.keys.has('KeyA') || this.keys.has('TouchLeft')) dir -= 1; if (this.keys.has('ArrowRight') || this.keys.has('KeyD') || this.keys.has('TouchRight')) dir += 1; if (!dir) dir = this.touchDir;
       pl.vx = lerp(pl.vx, dir * 300, Math.min(1, dt * 10));
-      const prevY = pl.y; pl.vy += this.gravity * dt; pl.x += pl.vx * dt; pl.y += pl.vy * dt;
+      const prevY = pl.y; pl.vy += this.gravity * vdt; pl.x += pl.vx * dt; pl.y += pl.vy * vdt;
       if (pl.x < -pl.w / 2) pl.x += W + pl.w; else if (pl.x > W + pl.w / 2) pl.x -= W + pl.w;
       if (pl.vy > 0) {
         const feetPrev = prevY + pl.h, feet = pl.y + pl.h; const cur = this.rows[this.round];
@@ -2494,7 +2548,7 @@ window.FUN = (function () {
         row.answered = true; p.ok = true; this.lastSafe = p; this.bounce(p); Snd.hit();
         this.fx.burst(p.x + p.w / 2, p.y - this.cam, this.c.ok, 12, 120);
         this.hit(100 + this.round * 5, { x: p.x + p.w / 2, y: p.y - this.cam - 22 }); this.gradeOnce(q.id, true); this.markLegend(q.a, p.i);
-        if (this.round + 1 >= this.queue.length) { this.busy = true; setTimeout(() => this.end(true), 500); } else this.nextRound();
+        if (this.round + 1 >= this.queue.length) { this.busy = true; this.later(.5, () => this.end(true)); } else this.nextRound();
       } else {
         p.broken = true; p.ok = false; this.player.vy = 60; Snd.wrong(); this.fx.burst(p.x + p.w / 2, p.y - this.cam, this.c.ko, 12); this.fx.shake(6);
         this.markLegend(q.a, p.i); this.gradeOnce(q.id, false); this.busy = true;
@@ -2510,7 +2564,7 @@ window.FUN = (function () {
       const alive = this.miss(null, { count: false });
       if (!alive) return this.end(false);
       const s = this.lastSafe; const pl = this.player; pl.x = s.x + s.w / 2; pl.vx = 0; this.bounce(s); this.cam = Math.min(this.cam, pl.y - this.cv.H * .55);
-      this.banner('Te has caído', 900); setTimeout(() => { if (this.state === 'running') this.busy = false; }, 500);
+      this.banner('Te has caído', 900); this.later(.5, () => { this.busy = false; });
     }
     draw() {
       const { ctx, W, H } = this.cv; const c = this.c; const pl = this.player; const cam = this.cam;
@@ -2518,7 +2572,7 @@ window.FUN = (function () {
       const [ox, oy] = this.fx.offset(); ctx.translate(ox, oy);
       // Marcas de altura cada tramo.
       ctx.strokeStyle = c.line; ctx.lineWidth = 1; ctx.setLineDash([3, 9]);
-      for (let i = 0; i <= this.queue.length; i++) { const y = this.rows.length ? (H - 34 - i * this.spacing) - cam : 0; if (y < -2 || y > H + 2) continue; ctx.beginPath(); ctx.moveTo(0, Math.round(y) + .5); ctx.lineTo(W, Math.round(y) + .5); ctx.stroke(); }
+      for (let i = 0; i <= this.queue.length; i++) { const y = this.rows.length ? (this.baseY - i * this.spacing) - cam : 0; if (y < -2 || y > H + 2) continue; ctx.beginPath(); ctx.moveTo(0, Math.round(y) + .5); ctx.lineTo(W, Math.round(y) + .5); ctx.stroke(); }
       ctx.setLineDash([]);
       // Meta.
       const gy = this.goalY - cam; if (gy > -20 && gy < H + 20) { ctx.fillStyle = c.ink2; ctx.font = '600 13px ' + c.fontUi; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText('Meta', W / 2, gy - 6); ctx.fillStyle = c.accent; ctx.fillRect(W / 2 - 40, gy - 3, 80, 3); }
@@ -2550,7 +2604,7 @@ window.FUN = (function () {
       this.car = { lane: 0, x: 0 }; this.lanes = 2; this.speed = 150; this.gate = null; this.idx = -1; this.setHits = new Map(); this.roadT = 0; this.marks = [];
       this.touchButtons([{ icon: 'left', label: 'Carril izquierdo', press: () => this.move(-1) }, { icon: 'right', label: 'Carril derecho', press: () => this.move(1) }]);
     }
-    howto() { return [{ keys: ['left', 'right'], text: 'Cambia de carril. En el móvil, toca el carril al que quieres ir.' }, { keys: ['1', '2', '3'], text: 'Ir directo a ese carril.' }, { keys: ['Esc'], text: 'Pausa.' }]; }
+    howto() { return [{ keys: ['left', 'right'], text: 'Cambia de carril. En el móvil, toca el carril al que quieres ir.' }, { keys: ['1', '2', '3'], text: 'Ir directo a ese carril.', kb: true }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
     start() { this.car.x = 0; this.nextGate(); }
     nextGate() {
       this.idx++; if (this.idx >= this.queue.length) { this.finishSets(); return this.end(true); }
@@ -2637,8 +2691,8 @@ window.FUN = (function () {
     setup() {
       const p = A.pack();
       const ks = p.concepts.filter(k => k.term.length <= 26); const cs = clozePool(p).filter(c => c.answer.length <= 18);
-      const kRounds = ks.length >= 5 ? A.pick(ks, Math.min(7, ks.length)).map(k => ({ id: k.id, label: 'Qué término es', text: k.def, answer: k.term, decoys: fshuffle(ks.filter(x => x.id !== k.id && fnorm(x.term) !== fnorm(k.term))).slice(0, 4).map(x => x.term), why: k.term + ': ' + k.def })) : [];
-      const cRounds = cs.length >= 5 ? A.pick(cs, Math.min(5, cs.length)).map(c => ({ id: c.id, label: 'Qué palabra falta', text: c.text.replace('___', '______'), answer: c.answer, decoys: fshuffle(cs.filter(x => x.id !== c.id && fnorm(x.answer) !== fnorm(c.answer))).slice(0, 4).map(x => x.answer), why: c.hint ? 'Pista: ' + c.hint : '', small: true })) : [];
+      const kRounds = ks.length >= 5 ? A.pick(ks, Math.min(7, ks.length)).map(k => ({ id: k.id, label: 'Qué término es', text: k.def, answer: k.term, decoys: distinct(fshuffle(ks.filter(x => x.id !== k.id)).map(x => x.term), [k.term]).slice(0, 4), why: '' })) : [];
+      const cRounds = cs.length >= 5 ? A.pick(cs, Math.min(5, cs.length)).map(c => ({ id: c.id, label: 'Qué palabra falta', text: c.text.replace('___', '______'), answer: c.answer, decoys: distinct(fshuffle(cs.filter(x => x.id !== c.id)).map(x => x.answer), [c.answer, ...c.alt]).slice(0, 4), why: c.hint ? 'Pista: ' + c.hint : '', small: true })) : [];
       this.rounds = fshuffle([...kRounds, ...cRounds]).slice(0, 10);
       this.player = { x: 0, w: 60, h: 16, target: null }; this.drops = []; this.round = -1; this.speed = 90; this.busy = false; this.spawnT = 0; this.bag = []; this.roundT = 0; this.r = null;
       this.touchButtons([
@@ -2646,7 +2700,7 @@ window.FUN = (function () {
         { icon: 'right', label: 'Derecha', press: () => this.keys.add('TouchRight'), release: () => this.keys.delete('TouchRight') }
       ]);
     }
-    howto() { return [{ keys: ['left', 'right'], text: 'Mueve la cesta. En el móvil, arrastra el dedo o usa los botones.' }, { keys: ['Atrapa'], text: 'Recoge la palabra que responde al enunciado y deja caer las demás. Recoger otra cuesta una vida.' }, { keys: ['Esc'], text: 'Pausa.' }]; }
+    howto() { return [{ keys: ['left', 'right'], text: 'Mueve la cesta. En el móvil, arrastra el dedo o usa los botones.' }, { keys: ['Atrapa'], text: 'Recoge la palabra que responde al enunciado y deja caer las demás. Recoger otra cuesta una vida.' }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
     start() { this.player.x = this.cv.W / 2; this.nextRound(); }
     nextRound() {
       this.round++; if (this.round >= this.rounds.length) return this.end(true);
@@ -2681,7 +2735,7 @@ window.FUN = (function () {
       if (d.ok) {
         Snd.hit(); this.fx.burst(d.x, d.y, this.c.ok, 14); this.hit(100 + Math.max(0, Math.round(40 - this.roundT * 5)), { x: d.x, y: d.y - 16 }); this.gradeOnce(r.id, true); this.busy = true;
         for (const o of this.drops) if (!o.done) { o.done = true; o.fade = .6; }
-        setTimeout(() => { if (this.state === 'running') this.nextRound(); }, 550);
+        this.later(.55, () => this.nextRound());
       } else {
         Snd.wrong(); this.fx.burst(d.x, d.y, this.c.ko, 12); this.fx.shake(6); this.gradeOnce(r.id, false); this.busy = true;
         const alive = this.miss({ q: r.text, a: r.answer });
@@ -2725,7 +2779,7 @@ window.FUN = (function () {
       this.levels.push({ id: 'final', n: n + 1, name: 'Jefe final', items: this.pool, cloze: this.cloze, hp: 160, timer: 15, final: true });
       this.level = null; this.waiting = true; this.current = null; this.choiceBtns = null; this.input = null;
     }
-    howto() { return [{ keys: ['1', '2', '3', '4'], text: 'Responde con el número de la opción o tócala. Cuanto antes, más daño haces.' }, { keys: ['Intro'], text: 'Cada cuatro turnos, ataque cargado: escribe la palabra que falta y pulsa Intro.' }, { keys: ['Esc'], text: 'Pausa.' }]; }
+    howto() { return [{ keys: ['1', '2', '3', '4'], text: 'Responde con el número de la opción o tócala. Cuanto antes, más daño haces.' }, { keys: ['Intro'], text: 'Cada cuatro turnos, ataque cargado: escribe la palabra que falta y pulsa Intro.' }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
     showStart() { if (this.opts.level || this.opts.skipIntro) return this.begin(); super.showStart(); }
     start() { if (this.opts.level) { const lv = this.levels.find(l => l.id === this.opts.level); if (lv) return this.beginBattle(lv); } this.chooseLevel(); }
     beaten() { return BEATEN[A.packId()] || (BEATEN[A.packId()] = {}); }
@@ -2773,14 +2827,14 @@ window.FUN = (function () {
       this.prompt({ label: 'Turno ' + this.turn + ' · ' + (q.label || A.secName(q.sec)), text: q.prompt });
       const box = h('div', { class: 'fun-choices' + (q.options.length === 2 ? ' two' : '') }); this.choiceBtns = [];
       q.options.forEach((t, i) => { const b = h('button', { class: 'fun-choice', type: 'button', onclick: () => this.answerMc(i) }, h('span', { class: 'fun-key', text: q.kind === 'tf' ? (i === 0 ? 'V' : 'F') : String(i + 1) }), h('span', { text: t })); this.choiceBtns.push(b); box.append(b); });
-      this.turnEl.replaceChildren(box);
+      this.turnEl.replaceChildren(box); this.fit(false);
     }
     renderCloze(c) {
       this.prompt({ label: 'Turno ' + this.turn + ' · ataque cargado: escribe la palabra que falta', text: c.text.replace('___', '______') });
       this.input = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', 'aria-label': 'Palabra que falta', enterkeyhint: 'go' });
       this.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); this.answerCloze(); } });
       const btn = h('button', { class: 'fun-btn primary', type: 'button', onclick: () => this.answerCloze() }, 'Atacar');
-      this.turnEl.replaceChildren(h('div', { class: 'fun-type' }, this.input, btn), c.hint ? h('div', { class: 'fun-label', text: 'Pista: ' + c.hint }) : null);
+      this.turnEl.replaceChildren(h('div', { class: 'fun-type' }, this.input, btn), c.hint ? h('div', { class: 'fun-label', text: 'Pista: ' + c.hint }) : null); this.fit(false);
       setTimeout(() => { if (this.input && this.state === 'running') this.input.focus({ preventScroll: true }); }, 60);
     }
     onKey(e) {
@@ -2791,14 +2845,14 @@ window.FUN = (function () {
     tick(dt) {
       if (this.waiting) return;
       this.timeLeft -= dt; const f = clamp(this.timeLeft / this.timerMax, 0, 1);
-      this.timerBar.style.width = (f * 100) + '%'; this.timerNum.textContent = Math.ceil(Math.max(0, this.timeLeft)) + ' s'; this.timerEl.classList.toggle('low', this.timeLeft < 5);
+      this.timerBar.style.width = (f * 100) + '%'; const secs = Math.ceil(Math.max(0, this.timeLeft)) + ' s'; if (this.timerNum.textContent !== secs) this.timerNum.textContent = secs; this.timerEl.classList.toggle('low', this.timeLeft < 5);
       if (this.timeLeft <= 0) this.timeout();
     }
     hurt(el) { el.classList.remove('hurt'); void el.offsetWidth; el.classList.add('hurt'); }
     lunge(el) { el.classList.add('lunge'); setTimeout(() => el.classList.remove('lunge'), 180); }
     float(anchor, text, cls) {
       const r = anchor.getBoundingClientRect(); const s = this.stage.getBoundingClientRect();
-      const d = h('div', { class: 'fun-dmg ' + cls, text }); d.style.left = (r.left - s.left + r.width / 2 - 24) + 'px'; d.style.top = (r.top - s.top - 8) + 'px';
+      const d = h('div', { class: 'fun-dmg ' + cls, text }); d.style.left = (r.left - s.left + r.width / 2 - 24) + 'px'; d.style.top = Math.max(0, r.top - s.top + r.height * .2) + 'px';
       this.stage.append(d); setTimeout(() => d.remove(), 760);
     }
     damageBoss(dmg, crit) { this.bhp = Math.max(0, this.bhp - dmg); this.bBar.style.width = (this.bhp / this.level.hp * 100) + '%'; this.bNum.textContent = String(this.bhp); this.float(this.bSprite, '-' + dmg, 'ko' + (crit ? ' crit' : '')); this.hurt(this.bSprite); this.lunge(this.pSprite); }
@@ -2817,7 +2871,7 @@ window.FUN = (function () {
       this.waiting = true; const cur = this.current; if (this.choiceBtns) this.choiceBtns.forEach(b => b.disabled = true); if (this.input) this.input.disabled = true;
       const info = cur.kind === 'mc' ? { q: cur.q.prompt, a: cur.q.answer, why: cur.q.why } : { q: cur.c.text.replace('___', '______'), a: cur.c.answer, why: '' };
       Snd.wrong(); this.damagePlayer(15); this.miss({ q: info.q, a: info.a });
-      if (this.hp <= 0) return setTimeout(() => this.end(false), 500);
+      if (this.hp <= 0) return this.later(.5, () => this.end(false));
       this.feedback({ title: 'Se acabó el tiempo', prompt: info.q, answer: info.a, why: info.why }).then(() => this.nextTurn());
     }
     resolveAnswer(ok, id, info) {
@@ -2827,11 +2881,11 @@ window.FUN = (function () {
         const dmg = Math.round((12 + Math.round(10 * speed)) * mult * charged); const crit = mult >= 2 || !!info.charged;
         if (crit) Snd.crit(); else Snd.hit();
         this.hit(dmg * 4); this.damageBoss(dmg, crit);
-        if (this.bhp <= 0) return setTimeout(() => this.victory(), 450);
-        setTimeout(() => { if (this.state === 'running') this.nextTurn(); }, 650);
+        if (this.bhp <= 0) return this.later(.45, () => this.victory());
+        this.later(.65, () => this.nextTurn());
       } else {
         Snd.wrong(); this.damagePlayer(20); this.miss({ q: info.q, a: info.a });
-        if (this.hp <= 0) return setTimeout(() => this.end(false), 500);
+        if (this.hp <= 0) return this.later(.5, () => this.end(false));
         this.feedback({ title: 'El jefe contraataca', prompt: info.q, answer: info.a, why: info.why }).then(() => this.nextTurn());
       }
     }
@@ -2850,13 +2904,12 @@ window.FUN = (function () {
   class Moles extends Game {
     setup() {
       const p = A.pack(); this.p = p;
-      this.concepts = p.concepts.length >= 6 ? p.concepts.filter(k => k.term.length <= 34) : [];
-      this.cloze = clozePool(p).filter(c => c.answer.length <= 24);
-      this.sorts = p.sort.filter(s => s.cats.length >= 2 && s.items.every(it => it.t.length <= 60) && s.cats.some((_, ci) => s.items.filter(it => it.c === ci).length >= 2 && s.items.filter(it => it.c !== ci).length >= 2));
+      this.concepts = moleConcepts(p); this.cloze = moleCloze(p); this.sorts = moleSorts(p);
       this.duration = 60; this.timeLeft = 60; this.holes = []; this.cur = null; this.lock = true; this.roundN = 0; this.roundT = 0; this.spawnT = 0; this.sinceTarget = 0; this.hits = 0; this.pending = [];
     }
-    howto() { return [{ keys: ['Toca'], text: 'Lee el enunciado y toca el topo que lleva la respuesta. Los demás, déjalos pasar.' }, { keys: ['60 s'], text: 'Cada acierto suma puntos; un fallo o un topo escapado resta tiempo.' }, { keys: ['Esc'], text: 'Pausa.' }]; }
+    howto() { return [{ keys: ['Toca'], text: 'Lee el enunciado y toca el topo que lleva la respuesta. Los demás, déjalos pasar.' }, { keys: ['1', '9'], text: 'Con teclado: el número del hueco, de izquierda a derecha y de arriba abajo.', kb: true }, { keys: ['60 s'], text: 'Cada acierto suma puntos; un fallo o un topo escapado resta tiempo.' }, { keys: ['Esc'], text: 'Pausa.', kb: true }]; }
     start() { this.build(); this.timeLeft = this.duration; this.nextRound(); }
+    onKey(e) { const m = /^(Digit|Numpad)([1-9])$/.exec(e.code); if (!m) return; const n = +m[2]; this.whack(m[1] === 'Numpad' ? [6, 7, 8, 3, 4, 5, 0, 1, 2][n - 1] : n - 1); }
     build() {
       this.grid = h('div', { class: 'fun-moles' }); this.holes = [];
       for (let i = 0; i < 9; i++) {
@@ -2874,11 +2927,11 @@ window.FUN = (function () {
       if (!kinds.length) return null;
       const kind = kinds[Math.floor(Math.random() * kinds.length)];
       if (kind === 'k') {
-        const k = A.pick(this.concepts, 1)[0]; const decoys = fshuffle(this.concepts.filter(x => x.id !== k.id && fnorm(x.term) !== fnorm(k.term))).slice(0, 6).map(x => x.term);
+        const k = A.pick(this.concepts, 1)[0]; const decoys = distinct(fshuffle(this.concepts.filter(x => x.id !== k.id)).map(x => x.term), [k.term]).slice(0, 6);
         return { kind, id: k.id, label: 'Qué término es', text: k.def, targets: [k.term], decoys, need: 1, answer: k.term };
       }
       if (kind === 'c') {
-        const c = A.pick(this.cloze, 1)[0]; const decoys = fshuffle(this.cloze.filter(x => x.id !== c.id && fnorm(x.answer) !== fnorm(c.answer))).slice(0, 6).map(x => x.answer);
+        const c = A.pick(this.cloze, 1)[0]; const decoys = distinct(fshuffle(this.cloze.filter(x => x.id !== c.id)).map(x => x.answer), [c.answer, ...c.alt]).slice(0, 6);
         return { kind, id: c.id, label: 'Qué palabra falta', text: c.text.replace('___', '______'), targets: [c.answer], decoys, need: 1, answer: c.answer, small: true };
       }
       const s = this.sorts[Math.floor(Math.random() * this.sorts.length)];
@@ -2897,7 +2950,7 @@ window.FUN = (function () {
     down(hl) { hl.up = false; hl.mole.classList.remove('up', 'ok', 'ko'); hl.label = null; hl.isTarget = false; }
     tick(dt) {
       this.timeLeft -= dt;
-      this.timeBar.style.width = clamp(this.timeLeft / this.duration, 0, 1) * 100 + '%'; this.timeNum.textContent = Math.ceil(Math.max(0, this.timeLeft)) + ' s'; this.timeEl.classList.toggle('low', this.timeLeft < 10);
+      this.timeBar.style.width = clamp(this.timeLeft / this.duration, 0, 1) * 100 + '%'; const secs = Math.ceil(Math.max(0, this.timeLeft)) + ' s'; if (this.timeNum.textContent !== secs) this.timeNum.textContent = secs; this.timeEl.classList.toggle('low', this.timeLeft < 10);
       if (this.timeLeft <= 0) return this.end(true);
       if (this.lock) return;
       this.roundT += dt; this.spawnT += dt;
@@ -2920,7 +2973,7 @@ window.FUN = (function () {
       if (hl.isTarget) {
         Snd.tap(); hl.mole.classList.add('ok'); hl.up = false; hl.isTarget = false; this.hits++; this.pending = this.pending.filter(t => t !== hl.label);
         this.hit(50 + Math.max(0, Math.round(30 - this.roundT * 4)));
-        if (this.hits >= this.cur.need) { this.lock = true; this.gradeOnce(this.cur.id, true); setTimeout(() => { if (this.state === 'running') this.nextRound(); }, 380); }
+        if (this.hits >= this.cur.need) { this.lock = true; this.gradeOnce(this.cur.id, true); this.later(.38, () => this.nextRound()); }
       } else {
         Snd.wrong(); hl.mole.classList.add('ko'); hl.up = false; this.timeLeft = Math.max(0, this.timeLeft - 3);
         this.miss({ q: this.cur.text, a: this.cur.answer }); this.gradeOnce(this.cur.id, false);
@@ -2931,11 +2984,14 @@ window.FUN = (function () {
     reveal(text) {
       this.lock = true; for (const hl of this.holes) if (hl.up) { hl.mole.classList.toggle('ok', hl.isTarget); hl.up = false; }
       this.prompt({ label: text, text: this.cur.text, small: !!this.cur.small }); const lb = this.promptEl.querySelector('.fun-label'); if (lb) lb.style.color = 'var(--ko)';
-      setTimeout(() => { if (this.state === 'running') this.nextRound(); }, 1500);
+      this.later(1.5, () => this.nextRound());
     }
     endTitle(won) { return won ? 'Tiempo cumplido' : 'Fin de la partida'; }
   }
-  register({ key: 'moles', name: 'Topos', icon: 'mole', canvas: false, lives: 0, desc: 'Sesenta segundos. Los términos asoman y se esconden; toca solo el que responde al enunciado.', intro: 'Un minuto de reflejos. Arriba sale una definición, una frase con hueco o una categoría; abajo asoman topos con términos. Toca el que corresponde y deja pasar los demás. Los fallos restan tiempo.', needs: p => p.concepts.length >= 6 || clozePool(p).length >= 5 }, Moles);
+  const moleConcepts = (p) => { const k = p.concepts.filter(x => x.term.length <= 34); return k.length >= 6 ? k : []; };
+  const moleCloze = (p) => { const c = clozePool(p).filter(x => x.answer.length <= 24); return c.length >= 5 ? c : []; };
+  const moleSorts = (p) => p.sort.filter(s => s.cats.length >= 2 && s.items.every(it => it.t.length <= 60) && s.cats.some((_, ci) => s.items.filter(it => it.c === ci).length >= 2 && s.items.filter(it => it.c !== ci).length >= 2));
+  register({ key: 'moles', name: 'Topos', icon: 'mole', canvas: false, lives: 0, desc: 'Sesenta segundos. Los términos asoman y se esconden; toca solo el que responde al enunciado.', intro: 'Un minuto de reflejos. Arriba sale una definición, una frase con hueco o una categoría; abajo asoman topos con términos. Toca el que corresponde y deja pasar los demás. Los fallos restan tiempo.', needs: p => moleConcepts(p).length > 0 || moleCloze(p).length > 0 || moleSorts(p).length > 0 }, Moles);
   return { mount, unmount, start: (key) => startGame(key, root, { onExit: renderHub }), games: GAMES, current: () => current, gradeMode: GRADE_MODE, _: { Game, register, h, icon, kbd, colors, Snd, mcPool, dealMc, sortSets, clozePool, clozeOk, LETTERS, A, wrapText, roundRect, clamp, lerp, rnd, reducedMotion, coarse, fshuffle } };
 })();
 
