@@ -26,8 +26,8 @@ Colores base (claro / oscuro; el modo sigue al sistema y se puede forzar con `ht
 | `--ink-2` | texto secundario | `#6F6B63` | `#A5A198` |
 | `--line` | líneas finas y bordes | `#E3E0D8` | `#363530` |
 | `--line-2` | borde en hover | `#C9C5BB` | `#4F4D46` |
-| `--ok` / `--ok-soft` | acierto | `#1F7A4D` / `#DDEFE3` | `#63C994` / `#17322A` |
-| `--ko` / `--ko-soft` | fallo | `#BC3A2B` / `#F7DEDA` | `#F28E7F` / `#3D1F1B` |
+| `--ok` / `--ok-soft` | acierto | `#1B6E45` / `#E1F2E7` | `#63C994` / `#17322A` |
+| `--ko` / `--ko-soft` | fallo | `#B33628` / `#F9E1DD` | `#F28E7F` / `#3D1F1B` |
 | `--warn` / `--warn-soft` | pendiente, aviso | `#A86F13` / `#F4E6C6` | `#E4B45D` / `#392E14` |
 
 Acento (lo elige el usuario en el botón de la cabecera; `html[data-accent="…"]`, guardado en localStorage `ra.accent`):
