@@ -87,8 +87,10 @@ function normalizePack(raw) {
 }
 function loadState() {
   const custom = LS.get('ra.packs', []);
-  state.packs = [normalizePack(PACK_TEMA2), ...custom.map(normalizePack).filter(Boolean)].filter(Boolean);
-  state.packId = LS.get('ra.packId', state.packs[0].id);
+  // Temas incluidos de serie, en orden; el Tema 2 sigue siendo el de partida para quien no ha elegido otro.
+  const builtins = [PACK_TEMA0, PACK_TEMA1, PACK_TEMA2].map(normalizePack).filter(Boolean);
+  state.packs = [...builtins, ...custom.map(normalizePack).filter(p => p && !builtins.some(b => b.id === p.id))];
+  state.packId = LS.get('ra.packId', PACK_TEMA2.id);
   if (!state.packs.find(p => p.id === state.packId)) state.packId = state.packs[0].id;
   loadProg();
 }

@@ -1,6 +1,10 @@
 # Daniel, hoy vas a estudiar · Repaso Arcade
 
-Página web de juegos para estudiar el **Tema 2: Agenda electrónica y comunicación** (correo electrónico, Gmail, Outlook, agenda, Thunderbird e importación de datos).
+Página web de juegos para estudiar tres temas incluidos de serie, que se eligen en la pestaña Temas:
+
+- **Tema 0: La energía eléctrica** (historia y los seis mecanismos para obtener electricidad).
+- **Tema 1: Seguridad en las instalaciones eléctricas** (sobreintensidades, magnetotérmicos y curvas B/C/D, fusibles, diferencial, puesta a tierra, códigos IP e IK).
+- **Tema 2: Agenda electrónica y comunicación** (correo electrónico, Gmail, Outlook, agenda, Thunderbird e importación de datos).
 
 **Jugar:** https://marieteffk.github.io/daniel-hoy-vas-a-estiduar/
 
@@ -39,7 +43,7 @@ videojuego, módulo `src/fun.js`), **Temas** (gestionar y añadir temas) y **Mé
 ## Estructura
 
 - `index.html`: la página completa, lista para servir (GitHub Pages).
-- `src/page.html`: estilos y marcado. `src/pack-tema2.js`: banco de contenidos del Tema 2. `src/app.js`: lógica de los juegos.
+- `src/page.html`: estilos y marcado. `src/pack-tema0.js`, `src/pack-tema1.js` y `src/pack-tema2.js`: bancos de contenidos de los temas 0, 1 y 2. `src/app.js`: lógica de los juegos.
 - `src/fun.js` (opcional): pestaña FUN. Define `window.FUN = { mount(root, api), unmount() }` dentro de una IIFE; el contrato está en `DISENO.md`.
 - `src/build.sh`: comprueba la sintaxis y reconstruye `index.html` a partir de los ficheros anteriores.
 - `DISENO.md`: colores, tipografía, espaciado, componentes y el contrato del módulo FUN.

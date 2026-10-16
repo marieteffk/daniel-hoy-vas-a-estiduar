@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Juegos de estudio con repaso espaciado para el Tema 2 (agenda electrónica y comunicación). Admite nuevos PDF.">
+<meta name="description" content="Juegos de estudio con repaso espaciado para los Temas 0 (energía eléctrica), 1 (seguridad en instalaciones eléctricas) y 2 (agenda electrónica). Admite nuevos PDF.">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -366,6 +366,354 @@ details.sources ul { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 6p
 <div class="toast" id="toast" role="status"></div>
 
 <script>
+// Banco de contenidos del Tema 0 (Electrotecnia, IES Marcos Zaragoza): "La energía eléctrica".
+// Generado a partir del resumen gráfico en PDF subido por el usuario.
+const PACK_TEMA0 = {
+  id: "tema0-energia",
+  title: "Tema 0. La energía eléctrica",
+  subtitle: "Historia, cómo se obtiene la electricidad y los seis mecanismos para crear una tensión",
+  source: "Electrotecnia, IES Marcos Zaragoza (resumen gráfico)",
+  builtin: true,
+  sections: [
+    { id: "s1", name: "Breve historia" },
+    { id: "s2", name: "Cómo obtenemos electricidad" },
+    { id: "s3", name: "Calor y rozamiento" },
+    { id: "s4", name: "Pilas y baterías" },
+    { id: "s5", name: "Luz y presión" },
+    { id: "s6", name: "Magnetismo e inducción" }
+  ],
+  concepts: [
+    { id: "k1", sec: "s1", term: "Tales de Mileto", def: "Hacia el 600 a. C. observó que el ámbar frotado atrae objetos ligeros: uno de los primeros fenómenos eléctricos estudiados." },
+    { id: "k2", sec: "s1", term: "William Gilbert", def: "Hacia 1600 estudió la electricidad y el magnetismo." },
+    { id: "k3", sec: "s1", term: "Alessandro Volta", def: "En 1800 construyó la primera pila práctica." },
+    { id: "k4", sec: "s1", term: "Ørsted y Ampère", def: "Hacia 1820 relacionaron la corriente eléctrica con el campo magnético." },
+    { id: "k5", sec: "s1", term: "Faraday y Henry", def: "En 1831 descubrieron la inducción electromagnética." },
+    { id: "k6", sec: "s1", term: "James C. Maxwell", def: "En 1864 unificó la electricidad y el magnetismo en una sola teoría: el electromagnetismo." },
+    { id: "k7", sec: "s1", term: "Nikola Tesla", def: "Impulsó la corriente alterna para los motores y el transporte de energía eléctrica." },
+    { id: "k8", sec: "s2", term: "Corriente eléctrica", def: "Movimiento ordenado de cargas. En un conductor metálico son electrones que se mueven." },
+    { id: "k9", sec: "s2", term: "Diferencia de potencial", def: "Lo que empuja la corriente; también se llama tensión. Sin ella no circulan las cargas." },
+    { id: "k10", sec: "s2", term: "Circuito cerrado", def: "Camino completo para las cargas. Con una fuente, permite una corriente sostenida." },
+    { id: "k11", sec: "s2", term: "Electricidad estática", def: "Carga acumulada y quieta, sin circuito por el que circular." },
+    { id: "k12", sec: "s2", term: "Electrón", def: "Partícula con carga negativa. Los electrones libres son los que forman la corriente en los metales." },
+    { id: "k13", sec: "s2", term: "Ion", def: "Átomo o grupo de átomos con carga (+ o −). En los electrolitos la corriente la forman iones que se desplazan." },
+    { id: "k14", sec: "s2", term: "Electrolito", def: "Sustancia por la que la corriente circula mediante iones positivos y negativos, como la del interior de una pila." },
+    { id: "k15", sec: "s2", term: "Semiconductor", def: "Material en el que la corriente se debe a electrones y huecos. Es la base de las células fotovoltaicas y la electrónica." },
+    { id: "k16", sec: "s3", term: "Efecto Seebeck", def: "Efecto termoeléctrico: dos metales distintos unidos, con sus uniones a distinta temperatura, generan una pequeña tensión." },
+    { id: "k17", sec: "s3", term: "Termopar", def: "Sensor formado por dos metales unidos que mide la temperatura gracias al efecto Seebeck (da unos pocos milivoltios)." },
+    { id: "k18", sec: "s3", term: "Generador termoeléctrico", def: "Convierte diferencias de temperatura en electricidad. Da poca energía, pero es robusto y no tiene piezas móviles." },
+    { id: "k19", sec: "s3", term: "Efecto triboeléctrico", def: "Electricidad estática por rozamiento: al frotar dos materiales se transfieren electrones; uno queda con carga + y el otro con carga −." },
+    { id: "k20", sec: "s3", term: "ESD", def: "Descarga electrostática. Puede ser casi imperceptible para una persona y aun así dañar componentes electrónicos." },
+    { id: "k21", sec: "s4", term: "Reacción redox", def: "Reacción química de oxidación y reducción. Es el fenómeno que genera la tensión en pilas y baterías." },
+    { id: "k22", sec: "s4", term: "Celda", def: "Unidad formada por dos electrodos (− y +) y un electrolito." },
+    { id: "k23", sec: "s4", term: "Batería", def: "Conjunto de varias celdas conectadas." },
+    { id: "k24", sec: "s4", term: "Pila primaria", def: "Pila que no se puede recargar, como la alcalina." },
+    { id: "k25", sec: "s4", term: "Acumulador", def: "Pila o batería recargable: plomo-ácido, NiMH o ion-litio." },
+    { id: "k26", sec: "s5", term: "Efecto fotovoltaico", def: "La luz excita cargas en un semiconductor y aparece una corriente continua." },
+    { id: "k27", sec: "s5", term: "Célula fotovoltaica", def: "Dispositivo que convierte la luz en corriente continua. La mayoría de módulos son de silicio." },
+    { id: "k28", sec: "s5", term: "Inversor", def: "Equipo que convierte la corriente continua (CC) en corriente alterna (CA) para las cargas." },
+    { id: "k29", sec: "s5", term: "Irradiancia", def: "Cantidad de radiación solar que llega al módulo. La potencia de un panel depende de ella, de la temperatura y de la orientación." },
+    { id: "k30", sec: "s5", term: "Efecto piezoeléctrico", def: "Al presionar ciertos materiales aparece una diferencia de potencial. Es reversible: al aplicar tensión, el material se deforma." },
+    { id: "k31", sec: "s6", term: "Inducción electromagnética", def: "Aparición de una tensión en una bobina cuando cambia el flujo magnético que la atraviesa." },
+    { id: "k32", sec: "s6", term: "Flujo magnético", def: "Campo magnético que atraviesa la bobina. Lo que induce tensión es su cambio, no su presencia." },
+    { id: "k33", sec: "s6", term: "Alternador", def: "Generador basado en la inducción electromagnética, como el de los coches y las centrales." },
+    { id: "k34", sec: "s6", term: "Turbina", def: "Máquina movida por agua, viento o vapor que hace girar el eje del generador." }
+  ],
+  questions: [
+    { id: "q1", sec: "s1", q: "¿Quién observó hacia el 600 a. C. que el ámbar frotado atrae objetos?", options: ["Tales de Mileto", "William Gilbert", "Alessandro Volta", "Michael Faraday"], a: 0, why: "Es el primer hito de la línea del tiempo: el ámbar frotado de Tales de Mileto." },
+    { id: "q2", sec: "s1", q: "¿Qué construyó Volta en 1800?", options: ["La primera pila práctica", "El primer motor de corriente alterna", "El primer transformador", "El primer termopar"], a: 0, why: "La pila de Volta fue la primera fuente de corriente sostenida." },
+    { id: "q3", sec: "s1", q: "¿Qué descubrieron Faraday y Henry en 1831?", options: ["La inducción electromagnética", "La pila eléctrica", "El efecto fotovoltaico", "El transistor"], a: 0, why: "Es la base de generadores, alternadores y transformadores." },
+    { id: "q4", sec: "s1", q: "¿Qué hizo Maxwell en 1864?", options: ["Unificar el electromagnetismo", "Inventar la pila", "Frotar ámbar", "Fabricar paneles solares"], a: 0, why: "Maxwell reunió electricidad y magnetismo en una sola teoría." },
+    { id: "q5", sec: "s1", q: "¿Qué relacionaron Ørsted y Ampère hacia 1820?", options: ["La corriente eléctrica y el campo magnético", "La luz y los semiconductores", "El calor y la tensión", "La presión y la carga"], a: 0, why: "Vieron que una corriente crea un campo magnético." },
+    { id: "q6", sec: "s1", q: "¿A quién se asocia la corriente alterna para motores y transporte de energía?", options: ["Tesla", "Tales", "Gilbert", "Volta"], a: 0, why: "Tesla impulsó la corriente alterna (CA)." },
+    { id: "q7", sec: "s1", q: "¿Cuál de estos avances pertenece a los siglos XX y XXI?", options: ["Baterías de ion-litio", "El ámbar frotado", "La pila de Volta", "El estudio de Gilbert"], a: 0, why: "También el transistor, la fotovoltaica y la electrónica de potencia." },
+    { id: "q8", sec: "s1", q: "¿Qué se estudió primero en la historia de la electricidad?", options: ["Las cargas y los efectos estáticos", "Los motores eléctricos", "Los transformadores", "Las placas solares"], a: 0, why: "Desde el siglo XIX, electricidad y magnetismo juntos hicieron posibles motores y generadores." },
+    { id: "q9", sec: "s2", q: "¿De dónde procede siempre la energía eléctrica?", options: ["De la transformación de otra forma de energía", "Se crea de la nada en el conductor", "Solo de las pilas", "Solo de las centrales"], a: 0, why: "Es la idea clave 1 del tema." },
+    { id: "q10", sec: "s2", q: "¿Qué forma la corriente en un conductor metálico?", options: ["Electrones que se mueven de forma ordenada", "Iones positivos y negativos", "Electrones y huecos", "Fotones"], a: 0, why: "En los metales hay electrones libres." },
+    { id: "q11", sec: "s2", q: "¿Qué cargas se desplazan en un electrolito?", options: ["Iones (+ y −)", "Solo electrones libres", "Huecos", "Ninguna"], a: 0, why: "En los electrolitos intervienen iones." },
+    { id: "q12", sec: "s2", q: "¿Con qué se trabaja en los semiconductores?", options: ["Electrones y huecos", "Solo iones", "Solo protones", "Neutrones"], a: 0, why: "Tres materiales, tres formas de conducir: metal, electrolito y semiconductor." },
+    { id: "q13", sec: "s2", q: "¿Qué hace falta para una corriente sostenida?", options: ["Un circuito cerrado y una fuente", "Solo acumular carga", "Un imán quieto", "Frotar dos materiales"], a: 0, why: "Estática = acumulación de carga; corriente sostenida = circuito y fuente." },
+    { id: "q14", sec: "s2", q: "¿Qué es lo que empuja la corriente?", options: ["La diferencia de potencial", "La resistencia", "El aislante", "El calor del conductor"], a: 0, why: "La diferencia de potencial (tensión) mueve las cargas." },
+    { id: "q15", sec: "s2", q: "¿Cuál NO es uno de los seis mecanismos para crear una tensión?", options: ["Sonido", "Luz", "Presión", "Magnetismo"], a: 0, why: "Los seis son: calor, rozamiento, acción química, luz, presión y magnetismo." },
+    { id: "q16", sec: "s3", q: "¿Qué efecto usa un termopar?", options: ["Seebeck", "Piezoeléctrico", "Fotovoltaico", "Triboeléctrico"], a: 0, why: "Efecto termoeléctrico de Seebeck: dos metales a distinta temperatura." },
+    { id: "q17", sec: "s3", q: "¿Para qué sirve principalmente un termopar?", options: ["Medir la temperatura", "Cargar baterías", "Convertir CC en CA", "Proteger contra ESD"], a: 0, why: "Se usa en sondas de temperatura y hornos industriales." },
+    { id: "q18", sec: "s3", q: "¿Cuál es una ventaja del generador termoeléctrico?", options: ["No tiene piezas móviles", "Da muchísima energía", "Funciona sin diferencia de temperatura", "Es una pila recargable"], a: 0, why: "Poca energía, pero robusto y sin piezas móviles." },
+    { id: "q19", sec: "s3", q: "Al frotar dos materiales, el que gana electrones queda con carga…", options: ["Negativa", "Positiva", "Neutra", "Alterna"], a: 0, why: "El material B gana electrones (−); el A los pierde y queda con carga +." },
+    { id: "q20", sec: "s3", q: "¿Qué puede ocurrir si la tensión estática es muy alta?", options: ["Salta una chispa por el aire", "Se produce corriente alterna", "El material se enfría", "Aparece luz solar"], a: 0, why: "La descarga es la chispa que notamos al tocar una manilla." },
+    { id: "q21", sec: "s3", q: "¿Por qué importa la seguridad ESD?", options: ["Una descarga imperceptible puede dañar componentes electrónicos", "Porque siempre electrocuta a las personas", "Porque recarga las baterías", "Porque mide la temperatura"], a: 0, why: "La persona casi no la nota, pero los componentes sí la sufren." },
+    { id: "q22", sec: "s4", q: "¿Qué recorre el circuito exterior de una pila?", options: ["Electrones", "Iones", "Huecos", "Protones"], a: 0, why: "Electrones fuera, iones dentro: así se cierra el circuito." },
+    { id: "q23", sec: "s4", q: "¿Qué se desplaza por el electrolito de una pila?", options: ["Iones", "Electrones libres", "Fotones", "Nada"], a: 0, why: "Por el electrolito circulan iones." },
+    { id: "q24", sec: "s4", q: "¿Qué reacción química genera la tensión en una pila?", options: ["Redox", "Combustión", "Fusión nuclear", "Evaporación"], a: 0, why: "Química ➜ eléctrica mediante reacciones redox." },
+    { id: "q25", sec: "s4", q: "¿Qué tiene una celda?", options: ["Dos electrodos y un electrolito", "Un imán y una bobina", "Dos metales a distinta temperatura", "Un cristal y una fuerza"], a: 0, why: "Varias celdas conectadas forman una batería." },
+    { id: "q26", sec: "s4", q: "¿Cuál de estas pilas NO se recarga?", options: ["Alcalina", "Ion-litio", "NiMH", "Plomo-ácido"], a: 0, why: "Las primarias, como la alcalina, no se recargan; los acumuladores sí." },
+    { id: "q27", sec: "s5", q: "¿Qué tipo de corriente entrega una célula fotovoltaica?", options: ["Continua (CC)", "Alterna (CA)", "Estática", "Ninguna"], a: 0, why: "Por eso hace falta un inversor para pasar a CA." },
+    { id: "q28", sec: "s5", q: "¿De qué material es la mayoría de módulos fotovoltaicos?", options: ["Silicio", "Cobre", "Ámbar", "Plomo"], a: 0, why: "La luz actúa sobre un semiconductor, normalmente silicio." },
+    { id: "q29", sec: "s5", q: "¿Qué hace el inversor en una instalación solar?", options: ["Convierte CC en CA", "Convierte CA en CC", "Almacena la energía", "Orienta los paneles"], a: 0, why: "CC ➜ CA para las cargas." },
+    { id: "q30", sec: "s5", q: "¿De qué NO depende la potencia de un panel según el tema?", options: ["Del color de la caja del inversor", "De la irradiancia", "De la temperatura", "De la orientación"], a: 0, why: "Potencia = irradiancia, temperatura y orientación del módulo." },
+    { id: "q31", sec: "s5", q: "¿Qué aparece al presionar un material piezoeléctrico?", options: ["Una diferencia de potencial", "Una corriente de iones", "Calor", "Luz"], a: 0, why: "Sin fuerza no hay tensión; con presión aparece una tensión." },
+    { id: "q32", sec: "s5", q: "¿Cuál es un uso típico del efecto piezoeléctrico?", options: ["Encendedores", "Centrales eléctricas", "Baterías de coche", "Termopares"], a: 0, why: "También sensores de vibración y presión, captadores y ultrasonidos." },
+    { id: "q33", sec: "s6", q: "¿Qué ocurre con un imán quieto junto a una bobina?", options: ["No se induce tensión", "Se induce mucha tensión", "La bobina se calienta", "Aparece corriente estática"], a: 0, why: "Sin cambio de flujo magnético no hay tensión inducida." },
+    { id: "q34", sec: "s6", q: "¿Cómo se consigue una tensión inducida mayor?", options: ["Haciendo que el flujo cambie más rápido", "Dejando el imán más tiempo quieto", "Usando un imán más pesado sin moverlo", "Calentando la bobina"], a: 0, why: "Cuanto más rápido cambia el flujo, mayor puede ser la tensión." },
+    { id: "q35", sec: "s6", q: "¿Qué aparato se basa en la inducción electromagnética?", options: ["El transformador", "La pila alcalina", "El termopar", "La célula solar"], a: 0, why: "También alternadores, generadores y muchos sensores." },
+    { id: "q36", sec: "s6", q: "En una central, ¿qué mueve el eje del generador?", options: ["Una turbina movida por agua, viento o vapor", "Una pila", "Un panel solar", "Un cristal piezoeléctrico"], a: 0, why: "Turbina ➜ eje en movimiento ➜ generador ➜ electricidad." },
+    { id: "q37", sec: "s6", q: "¿Qué conversión hace el efecto triboeléctrico?", options: ["Mecánica ➜ electrostática", "Química ➜ eléctrica", "Radiación ➜ eléctrica", "Térmica ➜ eléctrica"], a: 0, why: "Es la fila Rozamiento del resumen comparativo." }
+  ],
+  tf: [
+    { id: "t1", sec: "s1", s: "La primera pila práctica la construyó Volta en 1800.", a: true, why: "Es uno de los hitos de la línea del tiempo." },
+    { id: "t2", sec: "s1", s: "Maxwell descubrió la inducción electromagnética en 1831.", a: false, why: "La descubrieron Faraday y Henry; Maxwell unificó el electromagnetismo en 1864." },
+    { id: "t3", sec: "s1", s: "El transistor y las baterías de ion-litio son avances de los siglos XX y XXI.", a: true, why: "Junto con la fotovoltaica y la electrónica de potencia." },
+    { id: "t4", sec: "s1", s: "Los motores y generadores existieron antes de estudiarse las cargas estáticas.", a: false, why: "Primero se estudiaron los efectos estáticos; los motores llegaron en el siglo XIX." },
+    { id: "t5", sec: "s2", s: "La energía eléctrica siempre procede de transformar otra forma de energía.", a: true, why: "Es la primera idea clave del tema." },
+    { id: "t6", sec: "s2", s: "En los metales, la corriente la forman iones positivos y negativos.", a: false, why: "En los metales son electrones; los iones intervienen en los electrolitos." },
+    { id: "t7", sec: "s2", s: "La electricidad estática es carga acumulada y quieta.", a: true, why: "La corriente, en cambio, es carga en movimiento por un circuito cerrado." },
+    { id: "t8", sec: "s2", s: "Para que haya corriente sostenida basta con acumular carga.", a: false, why: "Hace falta un circuito cerrado y una fuente." },
+    { id: "t9", sec: "s2", s: "En los semiconductores se trabaja con electrones y huecos.", a: true, why: "Es la tercera forma de conducir la corriente." },
+    { id: "t10", sec: "s3", s: "Un termopar genera una tensión pequeña, del orden de milivoltios.", a: true, why: "Por eso el esquema muestra un milivoltímetro (mV)." },
+    { id: "t11", sec: "s3", s: "El generador termoeléctrico produce mucha energía y tiene muchas piezas móviles.", a: false, why: "Da poca energía y no tiene piezas móviles." },
+    { id: "t12", sec: "s3", s: "En el efecto triboeléctrico, el material que pierde electrones queda con carga positiva.", a: true, why: "El que los gana queda con carga negativa." },
+    { id: "t13", sec: "s3", s: "Una descarga electrostática que no notamos no puede dañar ningún aparato.", a: false, why: "Puede dañar componentes electrónicos: por eso existe la seguridad ESD." },
+    { id: "t14", sec: "s4", s: "Por el circuito exterior de una batería circulan electrones y por el electrolito, iones.", a: true, why: "Idea clave 3 del tema." },
+    { id: "t15", sec: "s4", s: "Una celda tiene un solo electrodo.", a: false, why: "Tiene dos electrodos (− y +) y un electrolito." },
+    { id: "t16", sec: "s4", s: "Los acumuladores se pueden recargar.", a: true, why: "Las pilas primarias no; los acumuladores sí." },
+    { id: "t17", sec: "s5", s: "Una célula fotovoltaica entrega corriente alterna directamente.", a: false, why: "Entrega corriente continua; el inversor la convierte en alterna." },
+    { id: "t18", sec: "s5", s: "En el efecto fotovoltaico la luz actúa sobre un semiconductor.", a: true, why: "Idea clave 4 del tema." },
+    { id: "t19", sec: "s5", s: "El efecto piezoeléctrico es reversible.", a: true, why: "Al aplicar tensión, el material se deforma ligeramente." },
+    { id: "t20", sec: "s5", s: "El efecto piezoeléctrico sirve para generar grandes cantidades de energía.", a: false, why: "No sirve para generar gran energía; se usa en sensores y actuadores." },
+    { id: "t21", sec: "s6", s: "Basta con tener un imán cerca de una bobina para inducir tensión continua.", a: false, why: "Lo que importa es el cambio de flujo magnético, no la presencia del imán." },
+    { id: "t22", sec: "s6", s: "Los alternadores de los coches usan el mismo principio que los generadores de las centrales.", a: true, why: "Ambos se basan en la inducción electromagnética." },
+    { id: "t23", sec: "s6", s: "Los transformadores se basan en la inducción electromagnética.", a: true, why: "Igual que generadores, alternadores y muchos sensores." }
+  ],
+  cloze: [
+    { id: "c1", sec: "s1", text: "Tales de Mileto observó los efectos eléctricos frotando ___.", answer: "ámbar", alt: ["ambar", "el ámbar"], hint: "Una resina fósil" },
+    { id: "c2", sec: "s1", text: "La primera pila práctica la construyó ___ en 1800.", answer: "Volta", alt: ["Alessandro Volta", "A. Volta"], hint: "Su apellido dio nombre al voltio" },
+    { id: "c3", sec: "s1", text: "Faraday y Henry descubrieron en 1831 la inducción ___.", answer: "electromagnética", alt: ["electromagnetica"], hint: "Electricidad + magnetismo" },
+    { id: "c4", sec: "s1", text: "Tesla impulsó la corriente ___ para motores y transporte de energía.", answer: "alterna", alt: ["CA"], hint: "Lo contrario de continua" },
+    { id: "c5", sec: "s2", text: "Lo que empuja la corriente es la diferencia de ___.", answer: "potencial", alt: [], hint: "También se llama tensión" },
+    { id: "c6", sec: "s2", text: "En los semiconductores la corriente se debe a electrones y ___.", answer: "huecos", alt: [], hint: "Ausencia de electrón" },
+    { id: "c7", sec: "s2", text: "En un electrolito la corriente la forman ___ que se desplazan.", answer: "iones", alt: [], hint: "Átomos con carga" },
+    { id: "c8", sec: "s3", text: "El efecto termoeléctrico también se llama efecto ___.", answer: "Seebeck", alt: [], hint: "Apellido de un físico alemán" },
+    { id: "c9", sec: "s3", text: "Un ___ mide la temperatura con dos metales unidos.", answer: "termopar", alt: [], hint: "Sonda de hornos industriales" },
+    { id: "c10", sec: "s3", text: "La electricidad estática por rozamiento se debe al efecto ___.", answer: "triboeléctrico", alt: ["triboelectrico"], hint: "Tribo = frotar" },
+    { id: "c11", sec: "s4", text: "Varias celdas conectadas forman una ___.", answer: "batería", alt: ["bateria"], hint: "La del móvil" },
+    { id: "c12", sec: "s4", text: "Las pilas y baterías se basan en reacciones ___.", answer: "redox", alt: [], hint: "Oxidación y reducción" },
+    { id: "c13", sec: "s4", text: "Las pilas recargables se llaman ___.", answer: "acumuladores", alt: ["acumulador"], hint: "Acumulan la carga" },
+    { id: "c14", sec: "s5", text: "El ___ convierte la corriente continua de los paneles en alterna.", answer: "inversor", alt: [], hint: "Invierte el tipo de corriente" },
+    { id: "c15", sec: "s5", text: "La mayoría de módulos fotovoltaicos son de ___.", answer: "silicio", alt: [], hint: "Un semiconductor" },
+    { id: "c16", sec: "s5", text: "Al presionar ciertos cristales aparece tensión: es el efecto ___.", answer: "piezoeléctrico", alt: ["piezoelectrico"], hint: "Piezo = presionar" },
+    { id: "c17", sec: "s6", text: "Para inducir tensión en una bobina, el flujo magnético tiene que ___.", answer: "cambiar", alt: ["variar"], hint: "No basta con que esté" },
+    { id: "c18", sec: "s6", text: "En una central, la ___ mueve el eje del generador.", answer: "turbina", alt: [], hint: "Agua, viento o vapor" }
+  ],
+  sort: [
+    { id: "s1", sec: "s2", title: "¿Qué se mueve en cada material?", cats: ["Metal: electrones", "Electrolito: iones", "Semiconductor: electrones y huecos"], items: [
+      { t: "Cable de cobre", c: 0 }, { t: "Hilo de aluminio", c: 0 }, { t: "Interior de una pila", c: 1 }, { t: "Agua con sal", c: 1 }, { t: "Célula solar de silicio", c: 2 }, { t: "Transistor", c: 2 }
+    ] },
+    { id: "s2", sec: "s2", title: "Origen de cada fenómeno", cats: ["Calor", "Rozamiento", "Química", "Luz"], items: [
+      { t: "Efecto Seebeck", c: 0 }, { t: "Termopar", c: 0 }, { t: "Efecto triboeléctrico", c: 1 }, { t: "Chispa al tocar una manilla", c: 1 }, { t: "Reacciones redox", c: 2 }, { t: "Pila alcalina", c: 2 }, { t: "Efecto fotovoltaico", c: 3 }, { t: "Panel solar", c: 3 }
+    ] },
+    { id: "s3", sec: "s5", title: "¿Presión o magnetismo?", cats: ["Presión (piezoeléctrico)", "Magnetismo (inducción)"], items: [
+      { t: "Encendedor", c: 0 }, { t: "Sensor de vibración", c: 0 }, { t: "Ultrasonidos", c: 0 }, { t: "Alternador", c: 1 }, { t: "Transformador", c: 1 }, { t: "Aerogenerador", c: 1 }
+    ] },
+    { id: "s4", sec: "s2", title: "¿Estática o corriente?", cats: ["Estática", "Corriente"], items: [
+      { t: "Carga acumulada y quieta", c: 0 }, { t: "Polvo que se pega a una pantalla", c: 0 }, { t: "Chispa al tocar una manilla", c: 0 }, { t: "Carga en movimiento por un circuito cerrado", c: 1 }, { t: "Una bombilla conectada a una pila", c: 1 }, { t: "Necesita una fuente", c: 1 }
+    ] },
+    { id: "s5", sec: "s4", title: "¿Se puede recargar?", cats: ["Primaria (no se recarga)", "Acumulador (se recarga)"], items: [
+      { t: "Alcalina", c: 0 }, { t: "Plomo-ácido", c: 1 }, { t: "NiMH", c: 1 }, { t: "Ion-litio", c: 1 }
+    ] }
+  ],
+  order: [
+    { id: "o1", sec: "s1", title: "Ordena la historia de la electricidad", steps: ["Tales de Mileto frota ámbar (~600 a. C.)", "Gilbert estudia electricidad y magnetismo (1600)", "Volta construye la primera pila (1800)", "Ørsted y Ampère relacionan corriente y campo magnético (1820)", "Faraday y Henry descubren la inducción (1831)", "Maxwell unifica el electromagnetismo (1864)"] },
+    { id: "o2", sec: "s5", title: "De la luz al enchufe en una instalación solar", steps: ["La luz excita cargas en un semiconductor", "La célula de silicio genera la corriente", "Sale corriente continua (CC)", "El inversor la convierte en alterna (CA) para las cargas"] },
+    { id: "o3", sec: "s6", title: "De la mecánica a la electricidad", steps: ["Agua, viento o vapor mueven la turbina", "La turbina hace girar el eje", "El generador aplica la inducción electromagnética", "Se obtiene electricidad"] },
+    { id: "o4", sec: "s3", title: "Cómo salta una chispa estática", steps: ["Se frotan dos materiales", "Se transfieren electrones de uno a otro", "Un material queda con carga + y el otro con carga −", "La tensión aumenta", "Salta una chispa por el aire"] }
+  ],
+  explain: [
+    { id: "e1", sec: "s2", q: "¿Qué diferencia hay entre electricidad estática y corriente eléctrica?", model: "La estática es carga acumulada y quieta. La corriente es carga en movimiento por un circuito cerrado, y para mantenerla hace falta una fuente que dé diferencia de potencial." },
+    { id: "e2", sec: "s3", q: "¿Cómo funciona un termopar?", model: "Une dos metales distintos. Si sus uniones están a distinta temperatura, aparece una pequeña tensión (efecto Seebeck) que se mide en milivoltios y sirve para saber la temperatura." },
+    { id: "e3", sec: "s4", q: "Explica qué circula por dentro y por fuera de una pila.", model: "Por el circuito exterior van electrones del electrodo negativo al positivo, pasando por la carga. Dentro, por el electrolito, se desplazan iones. Así el circuito se cierra." },
+    { id: "e4", sec: "s5", q: "¿Por qué una instalación fotovoltaica de vivienda necesita un inversor?", model: "Las células entregan corriente continua y la mayoría de aparatos funcionan con corriente alterna. El inversor convierte la CC en CA." },
+    { id: "e5", sec: "s6", q: "¿Por qué un imán quieto junto a una bobina no genera tensión?", model: "Porque lo que induce tensión es el cambio del flujo magnético, no la presencia del imán. Si nada se mueve, el flujo no cambia. Cuanto más rápido cambia, mayor puede ser la tensión." },
+    { id: "e6", sec: "s3", q: "¿Por qué hay que tener cuidado con la electricidad estática al manipular electrónica?", model: "Una descarga electrostática (ESD) casi imperceptible para una persona puede dañar componentes electrónicos." },
+    { id: "e7", sec: "s5", q: "¿Qué significa que el efecto piezoeléctrico es reversible y para qué se usa?", model: "Al presionar el material aparece tensión y, al revés, al aplicarle tensión se deforma ligeramente. No da mucha energía, así que se usa en sensores y actuadores: encendedores, sensores de vibración y presión, captadores y ultrasonidos." },
+    { id: "e8", sec: "s2", q: "Nombra los seis mecanismos para obtener electricidad con su fenómeno.", model: "Calor (efecto Seebeck), rozamiento (triboeléctrico), acción química (reacciones redox), luz (fotovoltaico), presión (piezoeléctrico) y magnetismo (inducción electromagnética)." }
+  ]
+};
+
+// Banco de contenidos del Tema 1 (Instalaciones eléctricas y automáticas, IES Marcos Zaragoza):
+// "Seguridad en las instalaciones eléctricas". Generado a partir del resumen gráfico en PDF subido por el usuario.
+const PACK_TEMA1 = {
+  id: "tema1-seguridad",
+  title: "Tema 1. Seguridad en las instalaciones eléctricas",
+  subtitle: "Sobreintensidades, magnetotérmicos y curvas B/C/D, fusibles, diferencial, puesta a tierra y códigos IP e IK",
+  source: "Instalaciones eléctricas y automáticas, IES Marcos Zaragoza (resumen gráfico)",
+  builtin: true,
+  sections: [
+    { id: "s1", name: "Riesgos y protecciones" },
+    { id: "s2", name: "Sobreintensidades" },
+    { id: "s3", name: "Magnetotérmico y curvas" },
+    { id: "s4", name: "Fusibles" },
+    { id: "s5", name: "Contactos, diferencial y tierra" },
+    { id: "s6", name: "Códigos IP e IK" }
+  ],
+  concepts: [
+    { id: "k1", sec: "s1", term: "Sobrecarga", def: "Circula más corriente que la admisible durante un tiempo. Calienta los conductores por efecto Joule. La protege el térmico del magnetotérmico o un fusible apropiado." },
+    { id: "k2", sec: "s1", term: "Cortocircuito", def: "Dos puntos de distinto potencial se unen por una impedancia muy pequeña y la corriente se dispara. Debe cortarse muy rápido: parte magnética o fusible." },
+    { id: "k3", sec: "s1", term: "Fuga a tierra", def: "Parte de la corriente sale de su recorrido normal y se va a tierra. La protegen el diferencial y la puesta a tierra." },
+    { id: "k4", sec: "s5", term: "Contacto directo", def: "La persona toca una parte activa, es decir, algo que normalmente está en tensión. Protección: aislamiento, barreras y protección complementaria." },
+    { id: "k5", sec: "s5", term: "Contacto indirecto", def: "La persona toca una masa metálica que se ha puesto en tensión accidentalmente por un defecto de aislamiento. Protección: tierra y desconexión automática." },
+    { id: "k6", sec: "s5", term: "Masa", def: "Parte metálica de un aparato que normalmente no está en tensión, pero puede quedar en tensión por un fallo de aislamiento." },
+    { id: "k7", sec: "s5", term: "Parte activa", def: "Conductor o pieza que está en tensión en servicio normal, como la fase." },
+    { id: "k8", sec: "s2", term: "Efecto Joule", def: "Calentamiento de un conductor al pasar corriente: P pérdidas = I² · R y energía E = I² · R · t." },
+    { id: "k9", sec: "s2", term: "Corriente de cortocircuito (Icc)", def: "Corriente que circula en un cortocircuito: Icc ≈ U / Zbucle. Con 230 V y 0,50 Ω son 460 A." },
+    { id: "k10", sec: "s3", term: "Interruptor magnetotérmico", def: "Protección rearmable con dos partes: un bimetal (térmico) para sobrecargas y un electroimán (magnético) para cortocircuitos." },
+    { id: "k11", sec: "s3", term: "Intensidad nominal (In)", def: "Corriente para la que está calibrado el magnetotérmico. En un C16, In = 16 A." },
+    { id: "k12", sec: "s3", term: "Poder de corte", def: "Máxima corriente de cortocircuito que la protección es capaz de cortar. No es lo mismo que la intensidad nominal." },
+    { id: "k13", sec: "s3", term: "Polos", def: "Número de vías (conductores) que controla el interruptor." },
+    { id: "k14", sec: "s3", term: "Bimetal", def: "Parte térmica del magnetotérmico. Se curva con el calor y actúa ante sobrecargas con respuesta retardada." },
+    { id: "k15", sec: "s3", term: "Electroimán", def: "Parte magnética del magnetotérmico. Actúa ante cortocircuitos con respuesta rápida." },
+    { id: "k16", sec: "s3", term: "Curva B", def: "Banda magnética de 3 a 5 × In. Para cargas resistivas con pocos picos de arranque." },
+    { id: "k17", sec: "s3", term: "Curva C", def: "Banda magnética de 5 a 10 × In. Uso general, picos moderados y algunos motores." },
+    { id: "k18", sec: "s3", term: "Curva D", def: "Banda magnética de 10 a 20 × In. Para arranques e impulsos altos: motores y algunos transformadores." },
+    { id: "k19", sec: "s3", term: "Zona térmica", def: "Parte de la curva de disparo para sobrecargas: cuanto mayor es la corriente, antes dispara, pero tarda." },
+    { id: "k20", sec: "s3", term: "Zona magnética", def: "Parte casi vertical de la curva de disparo: cortocircuito y disparo rápido." },
+    { id: "k21", sec: "s4", term: "Fusible", def: "Elemento calibrado que se funde con el calor de la corriente y abre el circuito. Después hay que sustituirlo." },
+    { id: "k22", sec: "s4", term: "Fusible gG", def: "Gama completa y uso general: protege frente a sobrecargas y cortocircuitos." },
+    { id: "k23", sec: "s4", term: "Fusible aM", def: "Gama parcial para motores: solo protege frente a cortocircuitos y necesita otra protección frente a sobrecargas." },
+    { id: "k24", sec: "s5", term: "Interruptor diferencial", def: "Compara la corriente que entra por la fase con la que vuelve por el neutro. Si la diferencia (IΔ) alcanza su sensibilidad, dispara." },
+    { id: "k25", sec: "s5", term: "Sensibilidad (IΔn)", def: "Corriente diferencial a la que dispara el diferencial, por ejemplo 30 mA. No es la corriente nominal." },
+    { id: "k26", sec: "s5", term: "Conductor de protección PE", def: "Conductor verde-amarillo que une las masas con la tierra. Facilita el recorrido de la corriente de defecto." },
+    { id: "k27", sec: "s5", term: "Puesta a tierra", def: "Unión de las masas con la tierra mediante el PE. No sustituye al diferencial ni a la protección frente a sobreintensidades." },
+    { id: "k28", sec: "s6", term: "Código IP", def: "Grado de protección de una envolvente: la 1.ª cifra frente a sólidos y polvo (0-6) y la 2.ª frente al agua (0-8). Una X indica cifra no especificada." },
+    { id: "k29", sec: "s6", term: "Código IK", def: "Protección de una envolvente frente a impactos mecánicos, de IK01 (0,15 J) a IK10 (20 J)." },
+    { id: "k30", sec: "s6", term: "IP65", def: "Estanca al polvo (6) y protegida frente a chorros de agua (5)." }
+  ],
+  questions: [
+    { id: "q1", sec: "s1", q: "¿Qué protege frente a una fuga a tierra?", options: ["Diferencial y puesta a tierra", "Solo un fusible", "El código IK", "La curva D"], a: 0, why: "Fuga a tierra ➜ diferencial y puesta a tierra." },
+    { id: "q2", sec: "s1", q: "¿Qué indica el código IK?", options: ["La resistencia a impactos de la envolvente", "La protección frente al agua", "La sensibilidad del diferencial", "La curva del magnetotérmico"], a: 0, why: "IP = polvo y agua; IK = impactos." },
+    { id: "q3", sec: "s1", q: "¿Qué protección corresponde a la entrada de polvo y agua?", options: ["Código IP", "Código IK", "Diferencial", "Fusible aM"], a: 0, why: "Polvo y agua ➜ código IP de la envolvente." },
+    { id: "q4", sec: "s1", q: "¿Por qué no basta con una sola protección en una instalación?", options: ["Cada protección actúa sobre un problema distinto", "Porque se gastan rápido", "Porque lo exige el color del cable", "Sí basta: el diferencial lo protege todo"], a: 0, why: "Ninguna protección sustituye a todas las demás." },
+    { id: "q5", sec: "s2", q: "¿Qué caracteriza a una sobrecarga?", options: ["Algo más de corriente de la admisible durante un tiempo", "Una corriente enorme instantánea", "Una fuga a tierra", "Un golpe en la envolvente"], a: 0, why: "La sobrecarga calienta los conductores y tarda en actuar." },
+    { id: "q6", sec: "s2", q: "¿Qué caracteriza a un cortocircuito?", options: ["Impedancia muy pequeña y corriente muy elevada", "Más aparatos de los previstos", "Corriente que vuelve por el neutro", "Agua dentro de la caja"], a: 0, why: "La intensidad se dispara y hay que cortar muy rápido." },
+    { id: "q7", sec: "s2", q: "Calefactor 2 000 W + horno 1 800 W + receptor 1 500 W a 230 V: ¿qué corriente circula?", options: ["Unos 23 A", "Unos 16 A", "Unos 5 A", "Unos 460 A"], a: 0, why: "P = 5 300 W ➜ I = 5 300 / 230 ≈ 23 A." },
+    { id: "q8", sec: "s2", q: "Con esos 23 A en un circuito de 16 A, ¿qué ocurre?", options: ["Hay una sobrecarga", "Hay un cortocircuito", "Hay una fuga a tierra", "Nada, está dentro de lo admisible"], a: 0, why: "23 A > 16 A durante un tiempo: actúa el térmico." },
+    { id: "q9", sec: "s2", q: "230 V con una impedancia de bucle de 0,50 Ω: ¿cuánto vale Icc?", options: ["460 A", "115 A", "23 A", "0,46 A"], a: 0, why: "Icc ≈ U / Zbucle = 230 / 0,50 = 460 A." },
+    { id: "q10", sec: "s2", q: "¿Qué fórmula da las pérdidas por efecto Joule?", options: ["P = I² · R", "P = U / I", "I = U · R", "P = R / I"], a: 0, why: "Y la energía disipada es E = I² · R · t." },
+    { id: "q11", sec: "s2", q: "¿Cuánta corriente consume un calefactor de 2 000 W a 230 V?", options: ["Unos 8,7 A", "Unos 23 A", "Unos 460 A", "Unos 0,1 A"], a: 0, why: "I = P / U = 2 000 / 230 ≈ 8,7 A." },
+    { id: "q12", sec: "s3", q: "¿Qué parte del magnetotérmico actúa ante una sobrecarga?", options: ["El bimetal (térmico)", "El electroimán (magnético)", "El neutro", "El conductor PE"], a: 0, why: "El bimetal da una respuesta retardada." },
+    { id: "q13", sec: "s3", q: "¿Qué parte del magnetotérmico actúa ante un cortocircuito?", options: ["El electroimán (magnético)", "El bimetal (térmico)", "El fusible", "El diferencial"], a: 0, why: "El electroimán da una respuesta rápida." },
+    { id: "q14", sec: "s3", q: "En un C16, ¿qué significa el 16?", options: ["Intensidad nominal de 16 A", "Poder de corte de 16 kA", "Sensibilidad de 16 mA", "16 polos"], a: 0, why: "La letra es la curva y el número la In." },
+    { id: "q15", sec: "s3", q: "¿Qué es el poder de corte?", options: ["La corriente de cortocircuito que puede cortar", "La corriente nominal", "El tiempo que tarda en disparar", "El número de vías"], a: 0, why: "No hay que confundirlo con la intensidad nominal." },
+    { id: "q16", sec: "s3", q: "¿Cuál es la banda magnética de la curva C?", options: ["5–10 × In", "3–5 × In", "10–20 × In", "1–3 × In"], a: 0, why: "B: 3–5, C: 5–10, D: 10–20." },
+    { id: "q17", sec: "s3", q: "¿Qué curva conviene para un motor con arranques fuertes?", options: ["D", "B", "Ninguna", "Cualquiera, son iguales"], a: 0, why: "La D tolera arranques e impulsos altos." },
+    { id: "q18", sec: "s3", q: "¿Qué curva es la propia de cargas resistivas con pocos picos?", options: ["B", "C", "D", "aM"], a: 0, why: "La B dispara antes en la zona magnética (3–5 × In)." },
+    { id: "q19", sec: "s3", q: "Un C16 recibe 100 A: ¿en qué múltiplo de In está y qué zona actúa?", options: ["6,25 In, zona magnética de la C", "1,5 In, zona térmica", "16 In, fuera de la banda", "100 In, no dispara"], a: 0, why: "100 / 16 = 6,25, dentro de 5–10 × In." },
+    { id: "q20", sec: "s3", q: "Un C16 con 24 A (1,5 In), ¿cómo actúa?", options: ["En la zona térmica, con retardo", "Disparo magnético instantáneo", "No dispara nunca", "Dispara el diferencial"], a: 0, why: "1,5 In es sobrecarga: zona térmica." },
+    { id: "q21", sec: "s3", q: "¿Cuál es la banda magnética de un C16 en amperios?", options: ["80–160 A", "48–80 A", "160–320 A", "16–32 A"], a: 0, why: "5 × 16 = 80 A y 10 × 16 = 160 A." },
+    { id: "q22", sec: "s3", q: "¿Cuál es la banda magnética de un D20?", options: ["200–400 A", "100–200 A", "60–100 A", "20–40 A"], a: 0, why: "10 × 20 = 200 A y 20 × 20 = 400 A." },
+    { id: "q23", sec: "s3", q: "¿Cuál es la banda magnética de un B25?", options: ["75–125 A", "125–250 A", "250–500 A", "25–50 A"], a: 0, why: "3 × 25 = 75 A y 5 × 25 = 125 A." },
+    { id: "q24", sec: "s3", q: "Según IEC/EN 60898-1, ¿a qué múltiplo de In debe disparar el térmico en el tiempo convencional?", options: ["1,45 × In", "1,13 × In", "3 × In", "10 × In"], a: 0, why: "A 1,13 × In no debe disparar; a 1,45 × In sí (1 h hasta 63 A)." },
+    { id: "q25", sec: "s3", q: "Un motor con pico de arranque de 120 A en un C16: ¿qué pasa?", options: ["Puede disparar, porque 120 A cae en la banda magnética C (80–160 A)", "Nunca dispara", "Dispara solo el diferencial", "Se funde el bimetal"], a: 0, why: "120 / 16 = 7,5 In, dentro de 5–10 × In. Una curva D lo toleraría." },
+    { id: "q26", sec: "s4", q: "¿Qué hay que hacer con un fusible después de actuar?", options: ["Sustituirlo", "Rearmarlo", "Nada", "Cambiarle la curva"], a: 0, why: "El magnetotérmico se rearma; el fusible se sustituye." },
+    { id: "q27", sec: "s4", q: "¿Qué protege un fusible gG?", options: ["Sobrecargas y cortocircuitos", "Solo cortocircuitos", "Solo fugas a tierra", "Solo impactos"], a: 0, why: "g = gama completa, G = uso general." },
+    { id: "q28", sec: "s4", q: "Un motor protegido con fusible aM, ¿qué protección le falta?", options: ["Protección frente a sobrecargas", "Protección frente a cortocircuitos", "Código IK", "Ninguna"], a: 0, why: "aM solo cubre cortocircuitos (gama parcial)." },
+    { id: "q29", sec: "s4", q: "En la nomenclatura de fusibles, ¿qué indica la letra R?", options: ["Semiconductores", "Motores", "Líneas", "Uso general"], a: 0, why: "R = protección rápida o ultrarrápida de semiconductores." },
+    { id: "q30", sec: "s4", q: "En la nomenclatura de fusibles, ¿qué indica la letra a minúscula?", options: ["Gama parcial: solo cortocircuitos", "Gama completa", "Motores", "Uso general"], a: 0, why: "g = gama completa; a = gama parcial." },
+    { id: "q31", sec: "s5", q: "Tocar un cable de fase pelado es un contacto…", options: ["Directo", "Indirecto", "Diferencial", "Térmico"], a: 0, why: "Se toca una parte activa, normalmente en tensión." },
+    { id: "q32", sec: "s5", q: "Tocar la carcasa metálica de una lavadora con un defecto de aislamiento es un contacto…", options: ["Indirecto", "Directo", "Seguro", "Magnético"], a: 0, why: "La masa se ha puesto en tensión accidentalmente." },
+    { id: "q33", sec: "s5", q: "Entran 5,00 A por la fase y vuelven 4,97 A por el neutro. ¿Cuánto vale IΔ?", options: ["30 mA", "3 mA", "300 mA", "9,97 A"], a: 0, why: "5,00 − 4,97 = 0,03 A = 30 mA: un diferencial de 30 mA puede disparar." },
+    { id: "q34", sec: "s5", q: "En un diferencial de 40 A - 30 mA, ¿qué son los 40 A?", options: ["La corriente nominal", "La sensibilidad", "El poder de corte", "La corriente de fuga"], a: 0, why: "Los 30 mA son la sensibilidad; los 40 A no lo son." },
+    { id: "q35", sec: "s5", q: "¿De qué color es el conductor de protección PE?", options: ["Verde-amarillo", "Azul", "Marrón", "Negro"], a: 0, why: "El PE une las masas con la tierra." },
+    { id: "q36", sec: "s5", q: "Si no hay ninguna fuga, ¿qué cumple la corriente en un diferencial?", options: ["IF = IN, así que IΔ = 0", "IF es mayor que IN", "IN es el doble que IF", "IΔ = 30 mA"], a: 0, why: "Toda la corriente que entra por la fase vuelve por el neutro." },
+    { id: "q37", sec: "s5", q: "Corriente de fase 3,20 A y de neutro 3,18 A: ¿cuánto vale IΔ?", options: ["20 mA", "2 mA", "200 mA", "6,38 A"], a: 0, why: "3,20 − 3,18 = 0,02 A = 20 mA, por debajo de 30 mA." },
+    { id: "q38", sec: "s6", q: "¿Qué significa la primera cifra del código IP?", options: ["Protección frente a sólidos y polvo", "Protección frente al agua", "Energía de impacto", "Número de polos"], a: 0, why: "La 2.ª cifra es el agua." },
+    { id: "q39", sec: "s6", q: "¿Qué protección indica IP44?", options: ["Cuerpos mayores de 1 mm y salpicaduras", "Estanca al polvo y chorros", "Inmersión continua", "Sin protección"], a: 0, why: "4 en sólidos = > 1 mm; 4 en agua = salpicaduras." },
+    { id: "q40", sec: "s6", q: "¿Qué indica IP55?", options: ["Protección frente al polvo y frente a chorros", "Estanqueidad total al polvo e inmersión", "Goteo vertical", "Cuerpos de más de 50 mm"], a: 0, why: "5 = protección frente al polvo; 5 = chorros." },
+    { id: "q41", sec: "s6", q: "¿Qué segunda cifra IP corresponde a inmersión continua?", options: ["8", "7", "6", "5"], a: 0, why: "7 = inmersión temporal; 8 = inmersión continua." },
+    { id: "q42", sec: "s6", q: "¿Qué energía de impacto resiste una envolvente IK08?", options: ["5 J", "2 J", "10 J", "20 J"], a: 0, why: "IK07 = 2 J, IK08 = 5 J, IK09 = 10 J, IK10 = 20 J." },
+    { id: "q43", sec: "s6", q: "¿Qué energía de impacto corresponde a IK10?", options: ["20 J", "10 J", "5 J", "0,15 J"], a: 0, why: "Es el código más alto de la escala." },
+    { id: "q44", sec: "s6", q: "¿Qué significa una X en un código IP, como IPX4?", options: ["Que esa cifra no se especifica", "Protección máxima", "Sin protección", "Que hay que sustituirlo"], a: 0, why: "IPX4: la cifra de sólidos no se indica." }
+  ],
+  tf: [
+    { id: "t1", sec: "s1", s: "El diferencial protege también frente a sobrecargas y cortocircuitos.", a: false, why: "Cada protección actúa sobre un problema distinto; el diferencial vigila fugas." },
+    { id: "t2", sec: "s1", s: "Antes de elegir una protección conviene clasificar el riesgo.", a: true, why: "Es el esquema general del tema." },
+    { id: "t3", sec: "s2", s: "Una sobrecarga se debe cortar en milisegundos, igual que un cortocircuito.", a: false, why: "La sobrecarga tarda en actuar; el cortocircuito debe cortarse muy rápido." },
+    { id: "t4", sec: "s2", s: "La sobrecarga calienta los conductores por efecto Joule.", a: true, why: "P pérdidas = I² · R." },
+    { id: "t5", sec: "s2", s: "En un cortocircuito la impedancia es muy grande.", a: false, why: "Es muy pequeña, por eso la corriente se dispara." },
+    { id: "t6", sec: "s3", s: "El magnetotérmico se puede rearmar tras eliminar la causa del disparo y comprobar el circuito.", a: true, why: "El fusible, en cambio, se sustituye." },
+    { id: "t7", sec: "s3", s: "B16, C16 y D16 tienen la misma intensidad nominal.", a: true, why: "Los tres son de 16 A; cambia la tolerancia a picos." },
+    { id: "t8", sec: "s3", s: "Una curva D es mejor que una C.", a: false, why: "No es mejor: es para otro tipo de carga, con arranques fuertes." },
+    { id: "t9", sec: "s3", s: "La banda magnética es un rango, no una línea única de actuación.", a: true, why: "Hay dispersión de fabricación." },
+    { id: "t10", sec: "s3", s: "En la gráfica de disparo, el eje horizontal es I / In en escala logarítmica.", a: true, why: "El eje vertical es el tiempo de desconexión." },
+    { id: "t11", sec: "s3", s: "A 1,13 × In el térmico debe disparar en el tiempo convencional.", a: false, why: "A 1,13 × In no debe disparar; debe hacerlo a 1,45 × In." },
+    { id: "t12", sec: "s3", s: "La intensidad nominal y el poder de corte son lo mismo.", a: false, why: "In es la corriente de servicio; el poder de corte, la corriente de cortocircuito que puede cortar." },
+    { id: "t13", sec: "s4", s: "Un fusible aM protege un motor frente a sobrecargas.", a: false, why: "Solo frente a cortocircuitos; hace falta otra protección para sobrecargas." },
+    { id: "t14", sec: "s4", s: "El fusible gG es de gama completa y uso general.", a: true, why: "Protege frente a sobrecargas y cortocircuitos." },
+    { id: "t15", sec: "s5", s: "La puesta a tierra sustituye al diferencial.", a: false, why: "No sustituye al diferencial ni a la protección frente a sobreintensidades." },
+    { id: "t16", sec: "s5", s: "Si IF = IN, la corriente diferencial es cero.", a: true, why: "No hay fuga a tierra." },
+    { id: "t17", sec: "s5", s: "En un diferencial 40 A - 30 mA, la sensibilidad es de 40 A.", a: false, why: "La sensibilidad es 30 mA; 40 A es la corriente nominal." },
+    { id: "t18", sec: "s5", s: "Un contacto indirecto es tocar una masa que se ha puesto en tensión por un fallo.", a: true, why: "El directo es tocar una parte activa." },
+    { id: "t19", sec: "s6", s: "En el código IP, la segunda cifra indica la protección frente al agua.", a: true, why: "Va de 0 (sin protección) a 8 (inmersión continua)." },
+    { id: "t20", sec: "s6", s: "IP6X significa estanca al polvo.", a: true, why: "6 es la cifra máxima de sólidos." },
+    { id: "t21", sec: "s6", s: "En el código IK, cuanto mayor es el número, menos energía de impacto resiste.", a: false, why: "Cuanto mayor el código, más energía resiste." },
+    { id: "t22", sec: "s6", s: "IK07 equivale a 2 J de impacto.", a: true, why: "IK06 = 1 J, IK07 = 2 J, IK08 = 5 J." }
+  ],
+  cloze: [
+    { id: "c1", sec: "s2", text: "La corriente de cortocircuito se estima como Icc ≈ U / ___.", answer: "Zbucle", alt: ["Z bucle", "Z", "impedancia de bucle", "la impedancia de bucle"], hint: "Impedancia del bucle de defecto" },
+    { id: "c2", sec: "s2", text: "La sobrecarga calienta los conductores por efecto ___.", answer: "Joule", alt: [], hint: "P = I² · R" },
+    { id: "c3", sec: "s2", text: "Con 230 V y 0,50 Ω de impedancia, Icc = ___ A.", answer: "460", alt: [], hint: "230 / 0,50" },
+    { id: "c4", sec: "s3", text: "La parte térmica del magnetotérmico es un ___.", answer: "bimetal", alt: [], hint: "Dos metales que se curvan con el calor" },
+    { id: "c5", sec: "s3", text: "La parte magnética del magnetotérmico es un ___.", answer: "electroimán", alt: ["electroiman"], hint: "Actúa ante cortocircuitos" },
+    { id: "c6", sec: "s3", text: "La curva ___ tiene una banda magnética de 3 a 5 × In.", answer: "B", alt: [], hint: "Cargas resistivas" },
+    { id: "c7", sec: "s3", text: "La curva ___ tiene una banda magnética de 10 a 20 × In.", answer: "D", alt: [], hint: "Motores y transformadores" },
+    { id: "c8", sec: "s3", text: "Un C16 con 100 A trabaja a ___ veces In.", answer: "6,25", alt: ["6.25"], hint: "100 / 16" },
+    { id: "c9", sec: "s3", text: "La máxima corriente de cortocircuito que puede cortar un interruptor es su poder de ___.", answer: "corte", alt: [], hint: "No es la In" },
+    { id: "c10", sec: "s4", text: "Tras fundirse, un fusible hay que ___.", answer: "sustituirlo", alt: ["cambiarlo", "sustituir", "cambiar", "reemplazarlo"], hint: "No se rearma" },
+    { id: "c11", sec: "s4", text: "El fusible para motores es el ___.", answer: "aM", alt: ["am"], hint: "Gama parcial + motores" },
+    { id: "c12", sec: "s5", text: "El conductor PE es de color ___.", answer: "verde-amarillo", alt: ["verde y amarillo", "verdeamarillo", "amarillo-verde"], hint: "Dos colores" },
+    { id: "c13", sec: "s5", text: "El diferencial compara la corriente de la fase con la del ___.", answer: "neutro", alt: [], hint: "Conductor de vuelta" },
+    { id: "c14", sec: "s5", text: "Un desequilibrio de 0,03 A equivale a ___ mA.", answer: "30", alt: [], hint: "Multiplica por 1 000" },
+    { id: "c15", sec: "s6", text: "El código ___ indica la protección frente a impactos.", answer: "IK", alt: ["ik"], hint: "Se mide en julios" },
+    { id: "c16", sec: "s6", text: "La segunda cifra IP 7 significa inmersión ___.", answer: "temporal", alt: [], hint: "La 8 es continua" },
+    { id: "c17", sec: "s6", text: "Una envolvente IK10 resiste impactos de ___ J.", answer: "20", alt: [], hint: "El máximo de la escala" }
+  ],
+  sort: [
+    { id: "s1", sec: "s1", title: "¿Qué protección para cada riesgo?", cats: ["Magnetotérmico o fusible", "Diferencial y tierra", "Código IP", "Código IK"], items: [
+      { t: "Sobrecarga", c: 0 }, { t: "Cortocircuito", c: 0 }, { t: "Fuga a tierra", c: 1 }, { t: "Contacto indirecto", c: 1 }, { t: "Entrada de polvo", c: 2 }, { t: "Chorros de agua", c: 2 }, { t: "Golpes en la envolvente", c: 3 }
+    ] },
+    { id: "s2", sec: "s2", title: "¿Sobrecarga o cortocircuito?", cats: ["Sobrecarga", "Cortocircuito"], items: [
+      { t: "Más aparatos conectados de los previstos", c: 0 }, { t: "Tarda en actuar", c: 0 }, { t: "La protege el bimetal", c: 0 }, { t: "23 A en un circuito de 16 A", c: 0 }, { t: "Impedancia muy pequeña", c: 1 }, { t: "Debe cortarse muy rápido", c: 1 }, { t: "La protege el electroimán", c: 1 }, { t: "Icc = 460 A", c: 1 }
+    ] },
+    { id: "s3", sec: "s3", title: "¿Qué curva usarías?", cats: ["Curva B", "Curva C", "Curva D"], items: [
+      { t: "Cargas resistivas", c: 0 }, { t: "Pocos picos de arranque", c: 0 }, { t: "Uso general", c: 1 }, { t: "Picos moderados", c: 1 }, { t: "Motores con arranques fuertes", c: 2 }, { t: "Algunos transformadores", c: 2 }
+    ] },
+    { id: "s4", sec: "s5", title: "¿Contacto directo o indirecto?", cats: ["Directo", "Indirecto"], items: [
+      { t: "Tocar un cable de fase pelado", c: 0 }, { t: "Tocar un borne en tensión", c: 0 }, { t: "Se evita con aislamiento y barreras", c: 0 }, { t: "Tocar la carcasa de un aparato con fallo de aislamiento", c: 1 }, { t: "Masa metálica en tensión", c: 1 }, { t: "Se evita con tierra y desconexión automática", c: 1 }
+    ] },
+    { id: "s5", sec: "s4", title: "Fusible o magnetotérmico", cats: ["Fusible", "Magnetotérmico"], items: [
+      { t: "Se funde el elemento", c: 0 }, { t: "Hay que sustituirlo", c: 0 }, { t: "Tipos gG y aM", c: 0 }, { t: "Disparo térmico y magnético", c: 1 }, { t: "Rearmable si es seguro", c: 1 }, { t: "Curvas B, C y D", c: 1 }
+    ] },
+    { id: "s6", sec: "s6", title: "¿Polvo o agua? (cifras IP)", cats: ["1.ª cifra: sólidos", "2.ª cifra: agua"], items: [
+      { t: "Cuerpos mayores de 50 mm", c: 0 }, { t: "Mayores de 2,5 mm", c: 0 }, { t: "Estanqueidad al polvo", c: 0 }, { t: "Goteo vertical", c: 1 }, { t: "Salpicaduras", c: 1 }, { t: "Inmersión continua", c: 1 }
+    ] }
+  ],
+  order: [
+    { id: "o1", sec: "s5", title: "Actuación conjunta ante un fallo de aislamiento", steps: ["Fallo de aislamiento", "La masa queda en tensión", "Circula corriente por el PE", "Aparece corriente residual", "Dispara el diferencial"] },
+    { id: "o2", sec: "s6", title: "Ordena de menor a mayor energía de impacto", steps: ["IK01 (0,15 J)", "IK04 (0,5 J)", "IK06 (1 J)", "IK07 (2 J)", "IK08 (5 J)", "IK10 (20 J)"] },
+    { id: "o3", sec: "s6", title: "Segunda cifra IP: de menos a más protección frente al agua", steps: ["Goteo vertical (1)", "Agua pulverizada (3)", "Salpicaduras (4)", "Chorros (5)", "Inmersión temporal (7)", "Inmersión continua (8)"] },
+    { id: "o4", sec: "s3", title: "Curvas por umbral magnético, de menor a mayor", steps: ["Curva B (3–5 × In)", "Curva C (5–10 × In)", "Curva D (10–20 × In)"] },
+    { id: "o5", sec: "s2", title: "Resuelve el ejemplo de sobrecarga", steps: ["Sumar potencias: 2 000 + 1 800 + 1 500 = 5 300 W", "Aplicar I = P / U", "I = 5 300 / 230 ≈ 23 A", "Comparar con In = 16 A", "Conclusión: sobrecarga, actúa el térmico"] }
+  ],
+  explain: [
+    { id: "e1", sec: "s2", q: "¿En qué se diferencian una sobrecarga y un cortocircuito?", model: "La sobrecarga es algo más de corriente de la admisible durante un tiempo; calienta por efecto Joule y la protección tarda en actuar (térmico). El cortocircuito une dos puntos de distinto potencial con una impedancia muy pequeña; la corriente es muy elevada y hay que cortar muy rápido (magnético o fusible)." },
+    { id: "e2", sec: "s3", q: "¿Por qué una curva D no es mejor que una C?", model: "Las dos pueden tener la misma In. La D solo tolera picos más altos antes del disparo magnético (10–20 × In), lo que viene bien en motores con arranques fuertes. En una carga normal, una D tardaría más en cortar un defecto; depende de la carga." },
+    { id: "e3", sec: "s3", q: "Diferencia entre intensidad nominal y poder de corte.", model: "La intensidad nominal (In) es la corriente para la que está calibrado el interruptor, por ejemplo 16 A en un C16. El poder de corte es la máxima corriente de cortocircuito que es capaz de cortar sin dañarse, mucho mayor." },
+    { id: "e4", sec: "s3", q: "Un motor tiene un pico de arranque de 120 A y está en un C16. ¿Qué pasa y qué harías?", model: "120 / 16 = 7,5 In, dentro de la banda magnética C (80–160 A), así que puede disparar al arrancar. Una curva D16 (160–320 A) toleraría el pico." },
+    { id: "e5", sec: "s5", q: "Explica cómo funciona un diferencial con un ejemplo.", model: "Compara la corriente de la fase con la del neutro. Sin fuga son iguales e IΔ = 0. Si entran 5,00 A y vuelven 4,97 A, faltan 0,03 A = 30 mA, que se van a tierra; un diferencial de 30 mA puede disparar." },
+    { id: "e6", sec: "s5", q: "¿Por qué la puesta a tierra no basta por sí sola?", model: "El PE da un camino a la corriente de defecto y evita que la masa quede peligrosamente en tensión, pero quien corta es el diferencial (o la protección frente a sobreintensidades). Actúan juntos: fallo, masa en tensión, corriente por el PE, corriente residual y disparo." },
+    { id: "e7", sec: "s5", q: "Contacto directo frente a indirecto: diferencias y protecciones.", model: "Directo: tocar una parte activa, normalmente en tensión; se evita con aislamiento, barreras y protección complementaria. Indirecto: tocar una masa metálica que se ha puesto en tensión por un defecto; se evita con tierra y desconexión automática (diferencial)." },
+    { id: "e8", sec: "s6", q: "Interpreta una caja IP65 IK08.", model: "6: estanca al polvo. 5: protegida frente a chorros de agua. IK08: resiste impactos de 5 J." },
+    { id: "e9", sec: "s4", q: "Un motor tiene un fusible aM. ¿Está bien protegido?", model: "Solo frente a cortocircuitos: el aM es de gama parcial. Hay que añadir una protección frente a sobrecargas." }
+  ]
+};
+
 // Banco de contenidos del Tema 2 (Unidad 7 del libro de Aplicaciones Ofimáticas, McGraw-Hill):
 // "Agenda electrónica y comunicación". Generado a partir del PDF subido por el usuario.
 const PACK_TEMA2 = {
@@ -783,8 +1131,10 @@ function normalizePack(raw) {
 }
 function loadState() {
   const custom = LS.get('ra.packs', []);
-  state.packs = [normalizePack(PACK_TEMA2), ...custom.map(normalizePack).filter(Boolean)].filter(Boolean);
-  state.packId = LS.get('ra.packId', state.packs[0].id);
+  // Temas incluidos de serie, en orden; el Tema 2 sigue siendo el de partida para quien no ha elegido otro.
+  const builtins = [PACK_TEMA0, PACK_TEMA1, PACK_TEMA2].map(normalizePack).filter(Boolean);
+  state.packs = [...builtins, ...custom.map(normalizePack).filter(p => p && !builtins.some(b => b.id === p.id))];
+  state.packId = LS.get('ra.packId', PACK_TEMA2.id);
   if (!state.packs.find(p => p.id === state.packId)) state.packId = state.packs[0].id;
   loadProg();
 }
