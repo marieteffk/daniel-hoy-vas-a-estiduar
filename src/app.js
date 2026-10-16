@@ -225,6 +225,8 @@ const GAME_DEFS = [
   { key: 'explain', name: 'Explícalo', desc: 'Un porqué con tus palabras.', principle: 'Interrogación elaborativa', needs: p => p.explain.length >= 1 }
 ];
 function lastDays(n) { const days = new Set(LS.get('ra.days', [])); const out = []; const d = new Date(); d.setDate(d.getDate() - (n - 1)); for (let i = 0; i < n; i++) { out.push(days.has(dayKey(d))); d.setDate(d.getDate() + 1); } return out; }
+// Las barras y el anillo se dibujan vacíos y se llenan en el siguiente fotograma, para que se vea la transición.
+function growIn(root) { requestAnimationFrame(() => requestAnimationFrame(() => { root.querySelectorAll('[data-w]').forEach(b => { b.style.width = b.dataset.w + '%'; }); root.querySelectorAll('[data-off]').forEach(c => c.setAttribute('stroke-dashoffset', c.dataset.off)); })); }
 function renderHome() {
   state.runId++; leaveGame(); setNav('home'); const p = pack(); const view = $('#view'); view.replaceChildren();
   const items = allItems(p); const m = Math.round(mastery(items) * 100); const due = dueCount(items); const streak = dayStreak();
@@ -241,7 +243,7 @@ function renderHome() {
     el('div', { class: 'big' }, el('span', { class: 'n' }, String(m), el('small', { text: '%' })), el('span', { class: 'l', text: 'del tema dominado' })),
     el('ul', { class: 'facts' },
       el('li', {}, el('span', { class: 'k', text: 'Para hoy' }), el('span', { class: 'v' + (due ? ' due' : ''), text: String(due) })),
-      el('li', {}, el('span', { class: 'k', text: 'Vistos' }), el('span', { class: 'v' }, seen + ' de ' + items.length, el('span', { class: 'mini' }, el('i', { style: 'width:' + Math.round(items.length ? seen / items.length * 100 : 0) + '%' })))),
+      el('li', {}, el('span', { class: 'k', text: 'Vistos' }), el('span', { class: 'v' }, seen + ' de ' + items.length, el('span', { class: 'mini' }, el('i', { 'data-w': Math.round(items.length ? seen / items.length * 100 : 0) })))),
       el('li', {}, el('span', { class: 'k', text: 'Racha' }), el('span', { class: 'v' }, streak + (streak === 1 ? ' día' : ' días'), daysEl))
     )));
   view.append(el('button', { class: 'cta', type: 'button', onclick: () => startGame('mix') },
@@ -258,9 +260,10 @@ function renderHome() {
   for (const s of p.sections) {
     const its = items.filter(it => it.sec === s.id); if (!its.length) continue;
     const pct = Math.round(mastery(its) * 100);
-    secs.append(el('div', { class: 'sec' }, el('span', { text: s.name }), el('div', { class: 'meter', role: 'img', 'aria-label': pct + '% dominado' }, el('i', { style: 'width:' + pct + '%' })), el('span', { class: 'pct', text: pct + '%' })));
+    secs.append(el('div', { class: 'sec' }, el('span', { text: s.name }), el('div', { class: 'meter', role: 'img', 'aria-label': pct + '% dominado' }, el('i', { 'data-w': pct })), el('span', { class: 'pct', text: pct + '%' })));
   }
   view.append(el('section', { class: 'block' }, el('div', { class: 'h' }, el('h2', { text: 'Apartados' }), el('span', { class: 'label', text: 'dominio' })), secs));
+  growIn(view);
   window.scrollTo({ top: 0 });
 }
 
@@ -360,7 +363,7 @@ function showSummary(def, s) {
   if (!prev || s.correct > parseInt(prev, 10)) { LS.set(key, scoreStr); record = !!prev || s.correct === s.total; }
   const r = 46, c = 2 * Math.PI * r;
   const ring = el('div', { class: 'ringWrap' });
-  ring.innerHTML = '<svg class="ring" viewBox="0 0 110 110" role="img" aria-label="' + pct + '% de aciertos"><circle class="track" cx="55" cy="55" r="' + r + '"></circle><circle class="val" cx="55" cy="55" r="' + r + '" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (c * (1 - pct / 100)).toFixed(1) + '"></circle><text x="55" y="65" text-anchor="middle">' + pct + '%</text></svg>';
+  ring.innerHTML = '<svg class="ring" viewBox="0 0 110 110" role="img" aria-label="' + pct + '% de aciertos"><circle class="track" cx="55" cy="55" r="' + r + '"></circle><circle class="val" cx="55" cy="55" r="' + r + '" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + c.toFixed(1) + '" data-off="' + (c * (1 - pct / 100)).toFixed(1) + '"></circle><text x="55" y="65" text-anchor="middle">' + pct + '%</text></svg>';
   const missed = s.results.filter(x => !x.ok && x.review).map(x => x.review);
   const headline = pct === 100 ? 'Pleno.' : pct >= 80 ? 'Muy bien.' : pct >= 50 ? 'Buen avance.' : 'Primer contacto.';
   const sub = pct === 100 ? 'Nada que objetar.' : pct >= 80 ? 'Casi todo dominado.' : pct >= 50 ? 'Repasa lo marcado.' : 'Lo fallado volverá pronto.';
@@ -377,6 +380,7 @@ function showSummary(def, s) {
       el('button', { class: 'btn text', type: 'button', onclick: renderHome }, 'Inicio')
     )
   ]));
+  growIn(view);
   window.scrollTo({ top: 0 });
 }
 
@@ -656,38 +660,52 @@ function conceptMcRound(k, p) {
   return mcRound(q);
 }
 
-/* ===================== Por qué estos juegos ===================== */
+/* ===================== Método ===================== */
+// Una fila por técnica: icono del juego, nombre, una frase, el dato y el detalle plegado en <details>.
+const METHODS = [
+  { icon: 'quiz', games: 'Test rápido · Verdadero o falso · Ruleta', name: 'Práctica de recuperación', line: 'Recordar algo de memoria lo fija más que volver a leerlo.', num: '+200', unit: 'estudios a favor', more: 'Un metaanálisis de 2017 con más de 200 estudios (Adesope, Trevisan y Sundararajan) encontró que hacerse preguntas gana a releer de forma consistente, en aula y en laboratorio, y sobre todo cuando el examen es días después. Dunlosky y colaboradores (2013) la clasificaron como una de las dos únicas técnicas de utilidad alta. Por eso aquí no hay modo lectura: todo es pregunta.' },
+  { icon: 'tf', games: 'Test rápido · Verdadero o falso', name: 'Feedback con explicación', line: 'Cada respuesta trae su porqué, para que no se te cuele una idea falsa.', num: '1 porqué', unit: 'por cada respuesta', more: 'Las opciones de un test pueden colarte ideas falsas si eliges mal y nadie te corrige (Marsh y otros, 2007). Con corrección después de cada respuesta ese riesgo desaparece y el aprendizaje mejora (Butler y Roediger, 2008; Kang y otros, 2007).' },
+  { icon: 'cloze', games: 'Completa el hueco · Tarjetas', name: 'Efecto de generación', line: 'Escribir la respuesta deja más huella que reconocerla entre opciones.', num: 'd ≈ 0,40', unit: 'Bertsch y otros, 2007', more: 'El metaanálisis de Bertsch y otros (2007) estima ese efecto en d ≈ 0,40, y Kang y otros (2007) vieron que las preguntas de respuesta corta con feedback rendían mejor que el tipo test a una semana vista. Por eso hay un juego en el que escribes la palabra, y en Tarjetas intentas recordar antes de girar.' },
+  { icon: 'cards', games: 'Tarjetas · Para hoy', name: 'Repaso espaciado', line: 'Lo que aciertas vuelve más tarde; lo que fallas, mañana.', num: '1 · 3 · 7 · 14', unit: 'días entre repasos', more: 'Repartir el estudio en varios días retiene mucho más que concentrarlo. Cepeda y otros (2006) lo confirmaron en 317 experimentos y vieron que el hueco óptimo entre repasos crece cuanto más lejos está el examen. Aquí cada elemento vive en una caja tipo Leitner: si lo aciertas vuelve a los 1, 3, 7 o 14 días; si lo fallas vuelve al día siguiente. Todos los juegos comparten ese calendario, y el dominio de la portada sube cuando aciertas un elemento varias veces en días distintos y baja cuando lo fallas.' },
+  { icon: 'sort', games: 'Clasifica · Empareja · Ruleta', name: 'Intercalado', line: 'Mezclar categorías parecidas enseña a distinguirlas.', num: 'g = 0,42', unit: 'Brunmair y Richter, 2019', more: 'Brunmair y Richter (2019) midieron un efecto medio de g = 0,42 en 238 comparaciones, mayor cuanto más se confunden las categorías entre sí (IMAP y POP3, cita y reunión). Yan y Sana (2021) comprobaron que el beneficio aparece en la mayoría de las personas aunque casi nadie lo intuya. La Ruleta mezcla además tipos de pregunta y secciones.' },
+  { icon: 'explain', games: 'Explícalo', name: 'Interrogación elaborativa', line: 'Explicar un porqué con tus palabras conecta la idea con lo que ya sabes.', num: 'utilidad media', unit: 'Dunlosky y otros, 2013', more: 'Dunlosky y otros (2013) la valoran como técnica de utilidad moderada, útil sobre todo para contenido factual como este tema. Comparar con la respuesta modelo y, si quieres, pedir a Claude que la valore, cierra el ciclo con feedback.' },
+  { icon: 'order', games: 'Ordena los pasos', name: 'Conocimiento procedimental', line: 'Reconstruir los pasos de un caso práctico es recuperación aplicada.', num: 'en orden', unit: 'como se evalúa en clase', more: 'Los casos prácticos del tema son secuencias (crear una cuenta, configurar POP3, exportar un PST). Reconstruir el orden es una forma de recuperación que además encaja con cómo se evalúan estos procedimientos en clase.' },
+  { icon: 'mix', games: 'Puntos · rachas · Ruleta', name: 'Juego como envoltorio', line: 'Puntos y rachas, sin rankings; cada partida se baraja.', num: 'd = 0,29', unit: 'Wouters y otros, 2013', more: 'Los metaanálisis sobre juegos serios (Wouters y otros, 2013: d = 0,29 en aprendizaje y 0,36 en retención; Sitzmann, 2011) muestran beneficios moderados que crecen cuando se juega en varias sesiones y como complemento de otra instrucción. Sailer y Homner (2020) añaden que la competición pura puede desmotivar a parte del alumnado. Por eso hay puntos y rachas, pero no rankings, y cada partida se baraja para que repetir siga siendo un reto.' }
+];
 function renderWhy() {
   state.runId++; leaveGame(); setNav('why'); const view = $('#view'); view.replaceChildren();
   const link = (href, text) => el('a', { href, target: '_blank', rel: 'noopener' }, text);
-  const P = (g, title, body) => el('section', { class: 'principle' }, el('div', { class: 'label', text: g }), el('h3', { text: title }), el('p', { text: body }));
-  view.append(el('div', { class: 'prose' },
+  const fold = (title, kids, cls) => el('details', { class: 'more' + (cls ? ' ' + cls : '') }, el('summary', {}, icon('chev', 'sm'), title), kids);
+  const rows = el('ul', { class: 'methods' });
+  for (const m of METHODS) {
+    rows.append(el('li', { class: 'method' },
+      el('span', { class: 'mIc' }, icon(m.icon)),
+      el('div', { class: 'mT' }, el('b', { text: m.name }), el('span', { class: 'd', text: m.line }), el('span', { class: 'label', text: m.games })),
+      el('div', { class: 'mNum' }, el('span', { class: 'n', text: m.num }), el('small', { text: m.unit })),
+      fold('Qué dice la investigación', el('p', { text: m.more }))
+    ));
+  }
+  const avoid = el('div', { class: 'avoid' }, ['Releer', 'Subrayar', 'Resumir'].map(t => el('span', {}, icon('x', 'sm'), t)));
+  const sources = el('ul', {},
+    el('li', {}, 'Adesope, Trevisan y Sundararajan (2017). Rethinking the use of tests: a meta-analysis of practice testing. ', link('https://journals.sagepub.com/doi/10.3102/0034654316689306', 'Review of Educational Research'), ' · ', link('https://www.learningscientists.org/blog/2017/2/9-1', 'resumen en The Learning Scientists')),
+    el('li', {}, 'Dunlosky, Rawson, Marsh, Nathan y Willingham (2013). Improving students’ learning with effective learning techniques. ', link('https://www.citedrive.com/en/discovery/improving-students-learning-with-effective-learning-techniques', 'Psychological Science in the Public Interest')),
+    el('li', {}, 'Cepeda, Pashler, Vul, Wixted y Rohrer (2006). Distributed practice in verbal recall tasks. ', link('https://digitalcommons.usf.edu/psy_facpub/1771/', 'Psychological Bulletin')),
+    el('li', {}, 'Brunmair y Richter (2019). Similarity matters: a meta-analysis of interleaved learning. ', link('https://www.psychologie.uni-wuerzburg.de/fileadmin/06020400/2019/Brunmair_Richter_in_press__2019_META-ANALYSIS_OF_INTERLEAVED_LEARNING.pdf', 'Psychological Bulletin (preprint)')),
+    el('li', {}, 'Yan y Sana (2021). The robustness of the interleaving benefit. ', link('https://www.Gwern.net/doc/psychology/spaced-repetition/2021-yan.pdf', 'Journal of Applied Research in Memory and Cognition')),
+    el('li', {}, 'Bertsch, Pesta, Wiscott y McDaniel (2007). The generation effect: a meta-analytic review. ', link('https://pubmed.ncbi.nlm.nih.gov/17645161/', 'Memory & Cognition')),
+    el('li', {}, 'Butler y Roediger (2008); Kang, McDermott y Roediger (2007); Marsh y otros (2007), sobre formatos de test y feedback. ', link('https://www.mojquiz.com/multiple-choice-vs-free-recall', 'resumen comparativo')),
+    el('li', {}, 'Wouters, van Nimwegen, van Oostendorp y van der Spek (2013). A meta-analysis of the cognitive and motivational effects of serious games. ', link('https://research-portal.uu.nl/en/publications/a-meta-analysis-of-the-cognitive-and-motivational-effects-of-seri/', 'Journal of Educational Psychology'), ' · Sitzmann (2011), resumidos en ', link('https://karlkapp.com/?p=4333', 'Karl Kapp')),
+    el('li', {}, 'Sailer y Homner (2020). The gamification of learning: a meta-analysis. ', link('https://link.springer.com/article/10.1007/s10648-019-09498-w', 'Educational Psychology Review'))
+  );
+  view.append(el('div', { class: 'page' },
     el('h1', { text: 'Por qué estos juegos' }),
-    el('p', { text: 'Los juegos de esta web no están elegidos por ser divertidos sin más. Cada uno aplica una técnica de estudio que la investigación en psicología cognitiva ha comparado una y otra vez con releer o subrayar, y que sale ganando. Esta es la lista corta.' }),
-    el('h2', { text: 'Lo que dice la investigación' }),
-    P('Test rápido · Verdadero o falso · Ruleta', 'Práctica de recuperación', 'Recordar algo de memoria fija más que volver a leerlo. Un metaanálisis de 2017 con más de 200 estudios (Adesope, Trevisan y Sundararajan) encontró que hacerse preguntas gana a releer de forma consistente, en aula y en laboratorio, y sobre todo cuando el examen es días después. Dunlosky y colaboradores (2013) la clasificaron como una de las dos únicas técnicas de utilidad alta. Por eso aquí no hay modo lectura: todo es pregunta.'),
-    P('Test rápido · Verdadero o falso', 'Feedback inmediato con explicación', 'Las opciones de un test pueden colarte ideas falsas si eliges mal y nadie te corrige (Marsh y otros, 2007). Con corrección después de cada respuesta ese riesgo desaparece y el aprendizaje mejora (Butler y Roediger, 2008; Kang y otros, 2007). Cada pregunta de esta web muestra la respuesta correcta y un porqué.'),
-    P('Completa el hueco · Tarjetas', 'Efecto de generación y recuerdo libre', 'Producir la respuesta uno mismo deja más huella que reconocerla entre opciones. El metaanálisis de Bertsch y otros (2007) estima ese efecto en d ≈ 0,40, y Kang y otros (2007) vieron que las preguntas de respuesta corta con feedback rendían mejor que el tipo test a una semana vista. Por eso hay un juego en el que escribes la palabra, y en Tarjetas intentas recordar antes de girar.'),
-    P('Tarjetas · Para repasar hoy', 'Práctica distribuida (repaso espaciado)', 'Repartir el estudio en varios días retiene mucho más que concentrarlo. Cepeda y otros (2006) lo confirmaron en 317 experimentos y vieron que el hueco óptimo entre repasos crece cuanto más lejos está el examen. Aquí cada elemento vive en una caja tipo Leitner: si lo aciertas vuelve a los 1, 3, 7 o 14 días; si lo fallas vuelve al día siguiente. Todos los juegos comparten ese calendario, y el porcentaje de dominio de la portada sube cuando aciertas un elemento varias veces en días distintos y baja cuando lo fallas.'),
-    P('Clasifica · Empareja · Ruleta', 'Intercalado', 'Mezclar categorías parecidas en vez de estudiarlas en bloque mejora la capacidad de distinguirlas. Brunmair y Richter (2019) midieron un efecto medio de g = 0,42 en 238 comparaciones, mayor cuanto más se confunden las categorías entre sí (IMAP y POP3, cita y reunión). Yan y Sana (2021) comprobaron que el beneficio aparece en la mayoría de las personas aunque casi nadie lo intuya. La Ruleta mezcla además tipos de pregunta y secciones.'),
-    P('Explícalo', 'Interrogación elaborativa y autoexplicación', 'Responder a un porqué con tus palabras obliga a conectar la idea con lo que ya sabes. Dunlosky y otros (2013) la valoran como técnica de utilidad moderada, útil sobre todo para contenido factual como este tema. Comparar con la respuesta modelo y, si quieres, pedir a Claude que la valore, cierra el ciclo con feedback.'),
-    P('Ordena los pasos', 'Conocimiento procedimental', 'Los casos prácticos del tema son secuencias (crear una cuenta, configurar POP3, exportar un PST). Reconstruir el orden es una forma de recuperación que además encaja con cómo se evalúan estos procedimientos en clase.'),
-    P('Puntos, rachas, aleatoriedad', 'Juego como envoltorio, no como sustituto', 'Los metaanálisis sobre juegos serios (Wouters y otros, 2013: d = 0,29 en aprendizaje y 0,36 en retención; Sitzmann, 2011) muestran beneficios moderados que crecen cuando se juega en varias sesiones y como complemento de otra instrucción. Sailer y Homner (2020) añaden que la competición pura puede desmotivar a parte del alumnado. Por eso hay puntos y rachas, pero no rankings, y cada partida se baraja para que repetir siga siendo un reto.'),
-    el('h2', { text: 'Lo que no encontrarás aquí' }),
-    el('p', { text: 'Releer, subrayar y resumir figuran entre las técnicas de utilidad baja en la revisión de Dunlosky (2013): dan sensación de dominio sin producirlo. Esta web no tiene modo lectura a propósito. Si necesitas repasar el texto, vuelve al PDF, pero vuelve después de haber intentado recordar.' }),
-    el('h2', { text: 'Fuentes' }),
-    el('ul', { class: 'sources' },
-      el('li', {}, 'Adesope, Trevisan y Sundararajan (2017). Rethinking the use of tests: a meta-analysis of practice testing. ', link('https://journals.sagepub.com/doi/10.3102/0034654316689306', 'Review of Educational Research'), ' · ', link('https://www.learningscientists.org/blog/2017/2/9-1', 'resumen en The Learning Scientists')),
-      el('li', {}, 'Dunlosky, Rawson, Marsh, Nathan y Willingham (2013). Improving students’ learning with effective learning techniques. ', link('https://www.citedrive.com/en/discovery/improving-students-learning-with-effective-learning-techniques', 'Psychological Science in the Public Interest')),
-      el('li', {}, 'Cepeda, Pashler, Vul, Wixted y Rohrer (2006). Distributed practice in verbal recall tasks. ', link('https://digitalcommons.usf.edu/psy_facpub/1771/', 'Psychological Bulletin')),
-      el('li', {}, 'Brunmair y Richter (2019). Similarity matters: a meta-analysis of interleaved learning. ', link('https://www.psychologie.uni-wuerzburg.de/fileadmin/06020400/2019/Brunmair_Richter_in_press__2019_META-ANALYSIS_OF_INTERLEAVED_LEARNING.pdf', 'Psychological Bulletin (preprint)')),
-      el('li', {}, 'Yan y Sana (2021). The robustness of the interleaving benefit. ', link('https://www.Gwern.net/doc/psychology/spaced-repetition/2021-yan.pdf', 'Journal of Applied Research in Memory and Cognition')),
-      el('li', {}, 'Bertsch, Pesta, Wiscott y McDaniel (2007). The generation effect: a meta-analytic review. ', link('https://pubmed.ncbi.nlm.nih.gov/17645161/', 'Memory & Cognition')),
-      el('li', {}, 'Butler y Roediger (2008); Kang, McDermott y Roediger (2007); Marsh y otros (2007), sobre formatos de test y feedback. ', link('https://www.mojquiz.com/multiple-choice-vs-free-recall', 'resumen comparativo')),
-      el('li', {}, 'Wouters, van Nimwegen, van Oostendorp y van der Spek (2013). A meta-analysis of the cognitive and motivational effects of serious games. ', link('https://research-portal.uu.nl/en/publications/a-meta-analysis-of-the-cognitive-and-motivational-effects-of-seri/', 'Journal of Educational Psychology'), ' · Sitzmann (2011), resumidos en ', link('https://karlkapp.com/?p=4333', 'Karl Kapp')),
-      el('li', {}, 'Sailer y Homner (2020). The gamification of learning: a meta-analysis. ', link('https://link.springer.com/article/10.1007/s10648-019-09498-w', 'Educational Psychology Review'))
-    ),
-    el('div', { class: 'row' }, el('button', { class: 'btn primary', type: 'button', onclick: renderHome }, 'Volver al inicio'))
+    el('p', { class: 'muted', text: 'Cada juego aplica una técnica que la psicología cognitiva ha comparado con releer o subrayar. Y gana.' }),
+    rows,
+    el('section', { class: 'block' },
+      el('div', { class: 'h' }, el('h2', { text: 'Lo que no hay aquí' }), el('span', { class: 'label', text: 'utilidad baja' })),
+      avoid,
+      el('p', { class: 'muted', text: 'Dan sensación de dominio sin producirlo (Dunlosky, 2013). Si necesitas el texto, vuelve al PDF, pero después de intentar recordar.' })),
+    fold('Fuentes', sources, 'sources')
   ));
   window.scrollTo({ top: 0 });
 }
@@ -753,8 +771,8 @@ function renderAdd() {
   const renderSource = () => {
     srcBox.replaceChildren();
     if (st.mode === 'pdf') {
-      const input = el('input', { type: 'file', accept: 'application/pdf,.pdf', id: 'pdfFile', 'aria-label': 'Archivo PDF' });
-      const drop = el('div', { class: 'drop' }, el('b', { text: 'Arrastra aquí un PDF o elígelo' }), el('span', { class: 'small muted', text: 'Se lee en tu navegador, página a página. Funciona con PDF de texto (no escaneados).' }), input);
+      const input = el('input', { type: 'file', accept: 'application/pdf,.pdf', id: 'pdfFile', class: 'vh', 'aria-label': 'Archivo PDF' });
+      const drop = el('div', { class: 'drop' }, el('b', { text: 'Arrastra aquí un PDF o elígelo' }), el('span', { class: 'small muted', text: 'Se lee en tu navegador, página a página. Funciona con PDF de texto (no escaneados).' }), input, el('label', { class: 'btn', for: 'pdfFile' }, 'Elegir PDF'));
       const handle = async (file) => {
         if (!file) return; if (!/pdf$/i.test(file.name) && file.type !== 'application/pdf') { toast('Elige un archivo PDF.'); return; }
         log.textContent = 'Cargando el lector de PDF…';
@@ -776,11 +794,11 @@ function renderAdd() {
       srcBox.append(ta, el('div', { class: 'row' }, use));
     } else {
       const ta = el('textarea', { class: 'src', placeholder: '{ "title": "...", "sections": [...], "questions": [...], ... }', id: 'srcJson', 'aria-label': 'JSON del tema' });
-      const file = el('input', { type: 'file', accept: 'application/json,.json', id: 'jsonFile', 'aria-label': 'Archivo JSON' });
+      const file = el('input', { type: 'file', accept: 'application/json,.json', id: 'jsonFile', class: 'vh', 'aria-label': 'Archivo JSON' });
       file.addEventListener('change', async () => { const f = file.files && file.files[0]; if (f) ta.value = await f.text(); });
       const use = el('button', { class: 'btn primary', type: 'button', text: 'Importar tema' });
       use.addEventListener('click', () => { try { const raw = JSON.parse(ta.value); const p = normalizePack(Object.assign({}, raw, { id: raw.id && !state.packs.find(x => x.id === raw.id) ? raw.id : 'pack-' + Date.now().toString(36), builtin: false })); if (!p) throw new Error('El JSON no contiene preguntas válidas.'); addPack(p); } catch (e) { log.textContent = 'No se pudo importar: ' + (e && e.message ? e.message : e); } });
-      srcBox.append(el('p', { class: 'small muted', text: 'Pega el JSON exportado desde Gestionar temas (o uno creado con el mismo formato).' }), ta, el('div', { class: 'row' }, file, use));
+      srcBox.append(el('p', { class: 'small muted', text: 'Pega el JSON exportado desde Temas › Exportar JSON, o elige el archivo.' }), ta, el('div', { class: 'row' }, file, el('label', { class: 'btn', for: 'jsonFile' }, 'Elegir archivo'), use));
     }
   };
   [['pdf', 'PDF'], ['text', 'Texto pegado'], ['json', 'JSON de un tema']].forEach(([m, label]) => { const b = el('button', { class: 'tab' + (st.mode === m ? ' on' : ''), type: 'button', text: label }); b.addEventListener('click', () => { st.mode = m; tabs.querySelectorAll('.tab').forEach(x => x.classList.remove('on')); b.classList.add('on'); renderSource(); }); tabs.append(b); });

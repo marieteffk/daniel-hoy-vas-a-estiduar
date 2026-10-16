@@ -72,12 +72,23 @@ Cuando el usuario cambia tema o modo, `document` emite el evento `themechange`; 
   borde y relieve `--line`; terciario (`.btn.text`) = solo texto en `--ink-2`, sin relieve. Altura mínima 46 px.
 - Barras de progreso: 8 a 10 px de alto, extremos redondeados, pista `--surface-2`, relleno `--accent`.
 - Movimiento: solo para cambios de estado, 160 ms `ease-out` (barras de progreso 300 ms). Nada decorativo
-  (sin confeti, sin pulsos, sin brillos). Respeta `prefers-reduced-motion`.
+  (sin confeti, sin pulsos, sin brillos). Respeta `prefers-reduced-motion` (la regla global anula animaciones
+  y transiciones). Los únicos movimientos que hay: la opción acertada hace un `pop` de 220 ms (escala 1,015),
+  el panel de respuesta sube 8 px al aparecer (200 ms), y las barras y el anillo del resumen nacen vacíos
+  (`data-w`, `data-off`) y los llena `growIn()` en el fotograma siguiente para que se vea la transición.
+- Texto secundario largo (explicaciones, fuentes): plegado en `<details class="more">` con un `summary` en
+  `--accent` y el icono `chev`, que gira 90° al abrir. Una pantalla muestra primero el esquema (icono, frase, dato)
+  y el párrafo solo si se pide; Método es el ejemplo (`.method`).
+- Selector de archivo: el `<input type=file>` se oculta pero sigue enfocable (`.vh`) y una `<label class="btn">`
+  hace de botón; el foco de teclado se dibuja en la etiqueta.
+- Táctil (`hover: none` y `pointer: coarse`): todo objetivo mide al menos 44 px (botones pequeños, muestras de
+  color, botones de modo, pestañas).
 
 ## Iconos
 
 SVG en línea, rejilla de 24 px, trazo de 2 px, `stroke="currentColor"`, extremos redondeados, sin relleno.
 En app.js hay un helper `icon(nombre)` con los de la web (juegos, más, flecha, paleta, sol, luna, check, cruz).
+Sobre fondo `--accent-soft` (cajas de 44 px, como en Método) el icono va en `--accent`.
 Un icono nuevo sigue el mismo trazo. No se usan emojis ni iconos de colores.
 
 ## Enganche de la pestaña FUN
