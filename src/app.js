@@ -35,8 +35,13 @@ const DAY = 86400000;
 const BOX_DAYS = [0, 1, 3, 7, 14];
 const state = { packs: [], packId: null, prog: {}, runId: 0, caps: { sample: undefined, downloads: undefined }, capsReady: null };
 // Juego en curso: al salir a cualquier otra pantalla se retira su escucha de teclado (si no, las teclas seguían respondiendo a la ronda abandonada).
-let activeShell = null;
-function leaveGame() { if (activeShell) { const s = activeShell; activeShell = null; s.destroy(); } }
+
+let activeShell = null; let funMounted = false;
+function leaveGame() {
+  if (activeShell) { const s = activeShell; activeShell = null; s.destroy(); }
+  if (funMounted) { funMounted = false; try { if (window.FUN && typeof window.FUN.unmount === 'function') window.FUN.unmount(); } catch (e) { console.error(e); } }
+}
+
 
 function normalizePack(raw) {
   if (!raw || typeof raw !== 'object') return null;
@@ -130,85 +135,163 @@ function dayStreak() {
 }
 function bestKey(game) { return 'ra.best.' + state.packId + '.' + game; }
 
-/* ===================== Cabecera ===================== */
+
+/* ===================== Iconos (SVG en línea, rejilla de 24 px, trazo de 1.75) ===================== */
+const ICONS = {
+  quiz: '<path d="M4 7h16M4 12h10M4 17h7"/><path d="M15 16l2 2 4-4"/>',
+  cloze: '<path d="M4 20h16"/><path d="M14.5 4.5l5 5L9 20H4v-5z"/>',
+  tf: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/><path d="M5.5 12l1.5 1.5 3-3.5"/><path d="M15 10.5l3 3M18 10.5l-3 3"/>',
+  match: '<circle cx="6" cy="6.5" r="2.5"/><circle cx="18" cy="6.5" r="2.5"/><circle cx="6" cy="17.5" r="2.5"/><circle cx="18" cy="17.5" r="2.5"/><path d="M8.5 6.5h7M8.5 17.5h7"/>',
+  sort: '<path d="M12 4v5"/><path d="M4 20v-5a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v5"/><path d="M12 12v8"/>',
+  order: '<path d="M3 20h5v-5h5v-5h5V5h3"/>',
+  cards: '<rect x="3" y="7" width="14" height="13" rx="2"/><path d="M7 4h14v13"/>',
+  explain: '<path d="M4 5h16v10H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
+  mix: '<path d="M3 7h4l10 10h4"/><path d="M3 17h4l10-10h4"/><path d="M18 4l3 3-3 3M18 14l3 3-3 3"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  chev: '<path d="M9 6l6 6-6 6"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  back: '<path d="M19 12H5M11 18l-6-6 6-6"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  undo: '<path d="M9 14l-4-4 4-4"/><path d="M5 10h9a5 5 0 0 1 0 10h-3"/>'
+};
+function icon(name, cls) { return el('span', { class: 'ic' + (cls ? ' ' + cls : ''), 'aria-hidden': 'true', html: '<svg viewBox="0 0 24 24">' + (ICONS[name] || '') + '</svg>' }); }
+
+/* ===================== Color de acento y modo claro/oscuro ===================== */
+// Los valores reales viven en el CSS (:root[data-accent]); esta tabla solo pinta las muestras del selector.
+const ACCENTS = [
+  { key: 'tinta', name: 'Tinta', light: '#2B40D4', dark: '#9DA8FF' },
+  { key: 'petroleo', name: 'Petróleo', light: '#0E7C86', dark: '#4FC6CF' },
+  { key: 'ciruela', name: 'Ciruela', light: '#7A2E8E', dark: '#D39AE3' },
+  { key: 'naranja', name: 'Naranja', light: '#B5500F', dark: '#F6A062' },
+  { key: 'carbon', name: 'Carbón', light: '#1A1813', dark: '#ECE7DC' }
+];
+const MODES = [['system', 'Sistema'], ['light', 'Claro'], ['dark', 'Oscuro']];
+const theme = { accent: LS.get('ra.accent', 'tinta'), mode: LS.get('ra.mode', 'system') };
+function isDark() { const h = document.documentElement; if (h.dataset.theme === 'dark') return true; if (h.dataset.theme === 'light') return false; return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); }
+function applyTheme() {
+  const h = document.documentElement;
+  if (!ACCENTS.find(a => a.key === theme.accent)) theme.accent = 'tinta';
+  if (!MODES.find(m => m[0] === theme.mode)) theme.mode = 'system';
+  h.setAttribute('data-accent', theme.accent);
+  if (theme.mode === 'light' || theme.mode === 'dark') h.setAttribute('data-theme', theme.mode); else h.removeAttribute('data-theme');
+  LS.set('ra.accent', theme.accent); LS.set('ra.mode', theme.mode);
+  renderThemePanel();
+  document.dispatchEvent(new CustomEvent('themechange', { detail: { accent: theme.accent, mode: theme.mode, dark: isDark() } }));
+}
+// Colores resueltos (rgb) para quien pinte en canvas; se vuelven a leer en cada evento themechange.
+function colors() {
+  const probe = el('span', { style: 'position:absolute;visibility:hidden;pointer-events:none' }); document.body.append(probe); const out = {};
+  for (const k of ['paper', 'surface', 'surface-2', 'ink', 'ink-2', 'line', 'line-2', 'accent', 'accent-ink', 'accent-soft', 'ok', 'ok-soft', 'ko', 'ko-soft', 'warn', 'warn-soft']) { probe.style.color = 'var(--' + k + ')'; out[k] = getComputedStyle(probe).color; }
+  probe.remove(); return out;
+}
+function renderThemePanel() {
+  const panel = $('#themePanel'); if (!panel) return; panel.replaceChildren();
+  const dark = isDark();
+  const sw = el('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Color' });
+  for (const a of ACCENTS) sw.append(el('button', { class: 'sw' + (a.key === theme.accent ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': a.key === theme.accent ? 'true' : 'false', title: a.name, 'aria-label': a.name, style: '--sw:' + (dark ? a.dark : a.light), onclick: () => { theme.accent = a.key; applyTheme(); } }));
+  const seg = el('div', { class: 'seg', role: 'radiogroup', 'aria-label': 'Modo' });
+  for (const [k, label] of MODES) seg.append(el('button', { class: k === theme.mode ? 'on' : '', type: 'button', role: 'radio', 'aria-checked': k === theme.mode ? 'true' : 'false', text: label, onclick: () => { theme.mode = k; applyTheme(); } }));
+  panel.append(el('div', { class: 'tpRow' }, el('span', { class: 'tpL', text: 'Color' }), sw), el('div', { class: 'tpRow' }, el('span', { class: 'tpL', text: 'Modo' }), seg));
+}
+function toggleThemePanel(force) {
+  const panel = $('#themePanel'); const btn = $('#themeBtn'); const open = typeof force === 'boolean' ? force : panel.hidden;
+  panel.hidden = !open; btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+/* ===================== Cabecera y navegación ===================== */
 function fillPackSelect() {
-  const sel = $('#packSel'); sel.replaceChildren();
+  const sel = $('#packSel'); if (!sel) return; sel.replaceChildren();
   for (const p of state.packs) sel.append(el('option', { value: p.id, selected: p.id === state.packId }, p.title));
 }
-$('#packSel').addEventListener('change', (e) => { setPack(e.target.value); renderHome(); });
+function setNav(key) { document.querySelectorAll('.navItem').forEach(b => { const on = b.dataset.nav === key; b.classList.toggle('on', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }); }
+const VIEWS = { home: () => renderHome(), fun: () => renderFun(), packs: () => renderPacks(), why: () => renderWhy() };
+document.querySelectorAll('.navItem').forEach(b => b.addEventListener('click', () => VIEWS[b.dataset.nav]()));
 $('#brandBtn').addEventListener('click', () => renderHome());
-$('#addBtn').addEventListener('click', () => renderAdd());
+$('#themeBtn').addEventListener('click', (e) => { e.stopPropagation(); toggleThemePanel(); });
+// composedPath se evalúa al despachar: aunque el botón pulsado se haya reconstruido, sigue contando como clic dentro del panel.
+document.addEventListener('click', (e) => { const panel = $('#themePanel'); if (!panel.hidden && !(e.composedPath ? e.composedPath().includes(panel) : panel.contains(e.target))) toggleThemePanel(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const panel = $('#themePanel'); if (!panel.hidden) { toggleThemePanel(false); $('#themeBtn').focus(); } } });
 
 /* ===================== Inicio ===================== */
 const GAME_DEFS = [
-  { key: 'quiz', name: 'Test rápido', desc: 'Diez preguntas con cuatro opciones. Cada respuesta trae su explicación.', principle: 'Práctica de recuperación', needs: p => p.questions.length >= 4 },
-  { key: 'cloze', name: 'Completa el hueco', desc: 'Escribe la palabra que falta sin ver opciones. Hay pistas si te atascas.', principle: 'Efecto de generación', needs: p => p.cloze.length >= 3 },
-  { key: 'tf', name: 'Verdadero o falso', desc: 'Afirmaciones con trampa. Lo importante es el porqué que aparece después.', principle: 'Recuperación con feedback', needs: p => p.tf.length >= 4 },
-  { key: 'match', name: 'Empareja', desc: 'Une cada término con su definición. Conceptos parecidos aparecen juntos a propósito.', principle: 'Discriminación e intercalado', needs: p => p.concepts.length >= 4 },
-  { key: 'sort', name: 'Clasifica', desc: 'Decide a qué categoría pertenece cada frase entre dos o tres que se confunden.', principle: 'Intercalado de categorías', needs: p => p.sort.length >= 1 },
-  { key: 'order', name: 'Ordena los pasos', desc: 'Reconstruye el orden de los casos prácticos tocando los pasos en secuencia.', principle: 'Conocimiento procedimental', needs: p => p.order.length >= 1 },
-  { key: 'cards', name: 'Tarjetas', desc: 'Recuerda la definición antes de girar la tarjeta. Las que fallas vuelven antes.', principle: 'Repaso espaciado', needs: p => p.concepts.length >= 3 },
-  { key: 'explain', name: 'Explícalo', desc: 'Responde a un porqué con tus palabras y compáralo con la respuesta modelo.', principle: 'Interrogación elaborativa', needs: p => p.explain.length >= 1 }
+  { key: 'quiz', name: 'Test rápido', desc: 'Diez preguntas con cuatro opciones.', principle: 'Práctica de recuperación', needs: p => p.questions.length >= 4 },
+  { key: 'cloze', name: 'Completa el hueco', desc: 'Escribe la palabra que falta.', principle: 'Efecto de generación', needs: p => p.cloze.length >= 3 },
+  { key: 'tf', name: 'Verdadero o falso', desc: 'Afirmaciones con trampa y su porqué.', principle: 'Recuperación con feedback', needs: p => p.tf.length >= 4 },
+  { key: 'match', name: 'Empareja', desc: 'Cada término con su definición.', principle: 'Discriminación e intercalado', needs: p => p.concepts.length >= 4 },
+  { key: 'sort', name: 'Clasifica', desc: 'Cada frase a su categoría.', principle: 'Intercalado de categorías', needs: p => p.sort.length >= 1 },
+  { key: 'order', name: 'Ordena los pasos', desc: 'Un caso práctico, paso a paso.', principle: 'Conocimiento procedimental', needs: p => p.order.length >= 1 },
+  { key: 'cards', name: 'Tarjetas', desc: 'Recuerda antes de girar.', principle: 'Repaso espaciado', needs: p => p.concepts.length >= 3 },
+  { key: 'explain', name: 'Explícalo', desc: 'Un porqué con tus palabras.', principle: 'Interrogación elaborativa', needs: p => p.explain.length >= 1 }
 ];
+function lastDays(n) { const days = new Set(LS.get('ra.days', [])); const out = []; const d = new Date(); d.setDate(d.getDate() - (n - 1)); for (let i = 0; i < n; i++) { out.push(days.has(dayKey(d))); d.setDate(d.getDate() + 1); } return out; }
 function renderHome() {
-  state.runId++; leaveGame(); const p = pack(); const view = $('#view'); view.replaceChildren();
+  state.runId++; leaveGame(); setNav('home'); const p = pack(); const view = $('#view'); view.replaceChildren();
   const items = allItems(p); const m = Math.round(mastery(items) * 100); const due = dueCount(items); const streak = dayStreak();
   const seen = items.filter(it => state.prog[it.id] && state.prog[it.id].seen).length;
-  view.append(el('section', { class: 'hero' },
-    el('p', { class: 'eyebrow', text: p.builtin ? 'Tema incluido' : 'Tema añadido' }),
-    el('h1', { text: p.title }),
-    p.subtitle ? el('p', { class: 'sub', text: p.subtitle }) : null,
-    p.source ? el('p', { class: 'src', text: 'Fuente: ' + p.source }) : null
-  ));
-  view.append(el('div', { class: 'stats' },
-    el('div', { class: 'stat' }, el('div', { class: 'v', text: m + '%' }), el('div', { class: 'l', text: 'Dominio del tema' })),
-    el('div', { class: 'stat' }, el('div', { class: 'v', text: String(due) }), el('div', { class: 'l', text: 'Para repasar hoy' })),
-    el('div', { class: 'stat' }, el('div', { class: 'v', text: seen + '/' + items.length }), el('div', { class: 'l', text: 'Elementos vistos' })),
-    el('div', { class: 'stat' }, el('div', { class: 'v', text: streak + (streak === 1 ? ' día' : ' días') }), el('div', { class: 'l', text: 'Racha de estudio' }))
-  ));
-  view.append(el('button', { class: 'ruleta', type: 'button', onclick: () => startGame('mix') },
-    el('div', {}, el('div', { class: 'h', text: 'Ruleta: sesión aleatoria' }), el('p', { text: 'Doce rondas que mezclan todos los juegos y todas las secciones. Prioriza lo que tienes pendiente de repasar.' })),
-    el('div', { class: 'go', text: 'Jugar' })
-  ));
+  const hero = el('section', { class: 'hero' }, el('h1', { text: p.title }), p.subtitle ? el('p', { class: 'sub', text: p.subtitle }) : null);
+  if (state.packs.length > 1) {
+    const sel = el('select', { id: 'packSel', class: 'packSel', 'aria-label': 'Tema de estudio' });
+    sel.addEventListener('change', (e) => { setPack(e.target.value); renderHome(); });
+    hero.append(el('div', { class: 'packPick' }, el('span', { class: 'label', text: 'Tema' }), sel));
+  }
+  view.append(hero); fillPackSelect();
+  const daysEl = el('span', { class: 'days', title: 'Últimos siete días' }, lastDays(7).map(on => el('i', { class: on ? 'on' : '' })));
+  view.append(el('section', { class: 'ledger', 'aria-label': 'Progreso' },
+    el('div', { class: 'big' }, el('span', { class: 'n' }, String(m), el('small', { text: '%' })), el('span', { class: 'l', text: 'del tema dominado' })),
+    el('ul', { class: 'facts' },
+      el('li', {}, el('span', { class: 'k', text: 'Para hoy' }), el('span', { class: 'v' + (due ? ' due' : ''), text: String(due) })),
+      el('li', {}, el('span', { class: 'k', text: 'Vistos' }), el('span', { class: 'v' }, seen + ' de ' + items.length, el('span', { class: 'mini' }, el('i', { style: 'width:' + Math.round(items.length ? seen / items.length * 100 : 0) + '%' })))),
+      el('li', {}, el('span', { class: 'k', text: 'Racha' }), el('span', { class: 'v' }, streak + (streak === 1 ? ' día' : ' días'), daysEl))
+    )));
+  view.append(el('button', { class: 'cta', type: 'button', onclick: () => startGame('mix') },
+    icon('mix'), el('span', { class: 't' }, el('b', { text: 'Ruleta' }), el('span', { class: 'd', text: 'Doce rondas con todos los juegos. Prioriza lo pendiente.' })), icon('arrow')));
   const grid = el('div', { class: 'games' });
   for (const g of GAME_DEFS) {
     const ok = g.needs(p); const best = LS.get(bestKey(g.key), null);
-    grid.append(el('button', { class: 'game' + (ok ? '' : ' disabled'), type: 'button', disabled: !ok, onclick: () => startGame(g.key) },
-      el('div', { class: 'name', text: g.name }), el('div', { class: 'desc', text: ok ? g.desc : 'Este tema no tiene contenido para este juego.' }),
-      el('div', { class: 'foot' }, el('span', { class: 'tag', text: g.principle }), best ? el('span', { class: 'rec', text: 'Récord ' + best }) : null)
-    ));
+    grid.append(el('button', { class: 'game', type: 'button', disabled: !ok, onclick: () => startGame(g.key) },
+      icon(g.key), el('span', { class: 't' }, el('b', { text: g.name }), el('span', { class: 'd', text: ok ? g.desc : 'Sin contenido en este tema.' })),
+      el('span', { class: 'right' }, best ? el('span', { class: 'rec', text: 'récord ' + best }) : null, icon('chev', 'chev'))));
   }
-  view.append(el('h2', { class: 'eyebrow', text: 'Juegos', style: 'margin-bottom:10px' }), grid);
+  view.append(el('section', { class: 'block' }, el('div', { class: 'h' }, el('h2', { text: 'Juegos' })), grid));
   const secs = el('div', { class: 'secs' });
   for (const s of p.sections) {
     const its = items.filter(it => it.sec === s.id); if (!its.length) continue;
     const pct = Math.round(mastery(its) * 100);
-    secs.append(el('div', { class: 'sec' }, el('span', { text: s.name }), el('div', { class: 'meter' }, el('i', { style: 'width:' + pct + '%', class: pct < 40 ? 'amber' : '' })), el('span', { class: 'pct', text: pct + '%' })));
+    secs.append(el('div', { class: 'sec' }, el('span', { text: s.name }), el('div', { class: 'meter', role: 'img', 'aria-label': pct + '% dominado' }, el('i', { style: 'width:' + pct + '%' })), el('span', { class: 'pct', text: pct + '%' })));
   }
-  view.append(el('section', { class: 'card stack' }, el('h2', { class: 'eyebrow', text: 'Dominio por sección' }), secs, el('p', { class: 'small muted', text: 'El dominio sube cuando aciertas un elemento varias veces en días distintos y baja cuando lo fallas. Así reparte el repaso.' })));
-  view.append(el('div', { class: 'homeLinks' },
-    el('button', { class: 'btn', type: 'button', onclick: renderWhy }, '¿Por qué estos juegos?'),
-    el('button', { class: 'btn', type: 'button', onclick: renderAdd }, 'Añadir otro PDF o tema'),
-    el('button', { class: 'btn ghost', type: 'button', onclick: renderPacks }, 'Gestionar temas')
-  ));
+  view.append(el('section', { class: 'block' }, el('div', { class: 'h' }, el('h2', { text: 'Apartados' }), el('span', { class: 'label', text: 'dominio' })), secs));
+  window.scrollTo({ top: 0 });
+}
+
+/* ===================== Pestaña FUN (módulo externo src/fun.js, ver DISENO.md) ===================== */
+const FUN_API = Object.freeze({ el, icon, pack, allItems, pick, shuffle, sample, norm, secName, grade, toast, LS, colors, state, dueCount, mastery, goHome: () => renderHome() });
+function renderFun() {
+  state.runId++; leaveGame(); setNav('fun'); const view = $('#view'); view.replaceChildren();
+  if (window.FUN && typeof window.FUN.mount === 'function') {
+    funMounted = true;
+    try { window.FUN.mount(view, FUN_API); } catch (e) { console.error(e); funMounted = false; view.replaceChildren(el('div', { class: 'empty' }, el('h1', { text: 'FUN' }), el('p', { class: 'muted', text: 'No se pudo abrir esta pestaña.' }))); }
+  } else {
+    view.append(el('div', { class: 'empty' }, el('h1', { text: 'FUN' }), el('p', { class: 'muted', text: 'Aquí irán los juegos tipo videojuego. Están en preparación.' })));
+  }
   window.scrollTo({ top: 0 });
 }
 
 /* ===================== Motor de rondas ===================== */
 function buildShell(title, total) {
   const root = el('section', { class: 'shell' });
-  const t = el('div', { class: 't', text: title });
-  const chipPts = el('span', { class: 'chip', text: '0 pts' });
-  const chipStreak = el('span', { class: 'chip', text: 'racha 0' });
-  const chipStep = el('span', { class: 'chip', text: '1/' + total });
-  const exit = el('button', { class: 'btn small ghost', type: 'button', text: 'Salir', onclick: () => renderHome() });
-  const head = el('div', { class: 'shell-head' }, el('div', { class: 'row' }, t), el('div', { class: 'row' }, el('div', { class: 'chips' }, chipStep, chipPts, chipStreak), exit));
-  const barFill = el('i', { style: 'width:0%' }); const bar = el('div', { class: 'bar' }, barFill);
+  const t = el('div', { class: 'shellTitle', text: title });
+  const pts = el('span', { class: 'pts', text: '0 pts' });
+  const streakEl = el('span', { class: 'streak', text: 'racha 0' });
+  const exit = el('button', { class: 'btn small text', type: 'button', text: 'Salir', onclick: () => renderHome() });
+  const head = el('div', { class: 'shellHead' }, t, el('div', { class: 'shellMeta' }, pts, streakEl, exit));
+  const segs = el('div', { class: 'segs', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(total), 'aria-valuenow': '0', 'aria-label': 'Progreso de la partida' });
+  for (let i = 0; i < total; i++) segs.append(el('i'));
   const body = el('div', { class: 'body' });
   const verdict = el('div', { class: 'verdict' }); const why = el('div', { class: 'why' });
   const nextBtn = el('button', { class: 'btn primary', type: 'button', text: 'Siguiente' });
   const fb = el('div', { class: 'fb' }, el('div', {}, verdict, why), nextBtn);
-  root.append(head, bar, body, fb);
+  root.append(head, segs, body, fb);
   let nextResolve = null; let keys = null;
   nextBtn.addEventListener('click', () => { if (nextResolve) { const r = nextResolve; nextResolve = null; r(); } });
   const onKey = (e) => {
@@ -220,11 +303,11 @@ function buildShell(title, total) {
   const shell = {
     root, body,
     setTitle(s) { t.textContent = s; },
-    setStep(i, n) { chipStep.textContent = (i + 1) + '/' + n; barFill.style.width = Math.round((i / n) * 100) + '%'; },
-    setScore(pts, streak) { chipPts.textContent = pts + ' pts'; chipStreak.textContent = 'racha ' + streak; chipStreak.classList.toggle('hot', streak >= 3); },
+    setStep(i, n) { segs.setAttribute('aria-valuenow', String(i)); segs.setAttribute('aria-valuemax', String(n)); [...segs.children].forEach((s, idx) => { s.className = idx < i ? 'done' : idx === i ? 'now' : ''; }); },
+    setScore(p, s) { pts.textContent = p + ' pts'; streakEl.textContent = 'racha ' + s; streakEl.classList.toggle('hot', s >= 3); },
     feedback(res) {
       fb.className = 'fb show ' + (res.ok ? 'ok' : 'ko');
-      verdict.textContent = res.msg || (res.ok ? sample(['¡Correcto!', '¡Eso es!', '¡Bien visto!', '¡Exacto!'], 1)[0] : 'No exactamente.');
+      verdict.replaceChildren(icon(res.ok ? 'check' : 'x', 'sm'), document.createTextNode(res.msg || (res.ok ? 'Correcto' : 'No es eso')));
       why.textContent = res.why || '';
       nextBtn.textContent = res.last ? 'Ver resultado' : 'Siguiente';
       nextBtn.focus({ preventScroll: true });
@@ -240,7 +323,7 @@ function buildShell(title, total) {
 }
 async function runRounds(def) {
   if (!def.rounds.length) { toast('Este tema no tiene contenido suficiente para este juego.'); return renderHome(); }
-  const run = ++state.runId; const view = $('#view'); view.replaceChildren();
+  const run = ++state.runId; setNav('home'); const view = $('#view'); view.replaceChildren();
   const shell = buildShell(def.title, def.rounds.length); view.append(shell.root); window.scrollTo({ top: 0 });
   let correct = 0, streak = 0, best = 0, points = 0; const results = [];
   const cleanup = () => shell.destroy();
@@ -263,6 +346,12 @@ async function runRounds(def) {
   cleanup();
   showSummary(def, { correct, total: def.rounds.length, points, best, results });
 }
+function resultShell(title, kids) {
+  return el('section', { class: 'shell' }, el('div', { class: 'shellHead' }, el('div', { class: 'shellTitle', text: title }), el('span', { class: 'label', text: 'resultado' })), el('div', { class: 'body summary' }, kids));
+}
+function missedList(rows) {
+  return el('div', { class: 'stack tight' }, el('h3', { text: 'Para repasar' }), el('div', { class: 'missed' }, rows.map(x => el('div', { class: 'm' }, el('b', { text: x.q }), el('span', { text: x.a })))));
+}
 function showSummary(def, s) {
   const view = $('#view'); view.replaceChildren();
   const pct = Math.round((s.correct / s.total) * 100);
@@ -271,31 +360,27 @@ function showSummary(def, s) {
   if (!prev || s.correct > parseInt(prev, 10)) { LS.set(key, scoreStr); record = !!prev || s.correct === s.total; }
   const r = 46, c = 2 * Math.PI * r;
   const ring = el('div', { class: 'ringWrap' });
-  ring.innerHTML = '<svg class="ring" viewBox="0 0 110 110" aria-hidden="true"><circle class="track" cx="55" cy="55" r="' + r + '"></circle><circle class="val" cx="55" cy="55" r="' + r + '" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (c * (1 - pct / 100)).toFixed(1) + '"></circle><text x="55" y="64" text-anchor="middle">' + pct + '%</text></svg>';
-  const missed = s.results.filter(x => !x.ok && x.review);
-  const headline = pct === 100 ? 'Pleno. Nada que objetar.' : pct >= 80 ? 'Muy bien. Casi todo dominado.' : pct >= 50 ? 'Buen avance. Repasa lo marcado.' : 'Primer contacto. Lo fallado volverá pronto.';
-  view.append(el('section', { class: 'shell' },
-    el('div', { class: 'shell-head' }, el('div', { class: 't', text: def.title + ' · resultado' })),
-    el('div', { class: 'body summary' },
-      el('div', { class: 'summaryTop' }, ring, el('div', { class: 'summaryNums' },
-        el('div', { class: 'h', text: headline }),
-        el('div', { text: s.correct + ' de ' + s.total + ' rondas acertadas · ' + s.points + ' puntos · mejor racha ' + s.best }),
-        record ? el('span', { class: 'tag amber', text: 'Nuevo récord' }) : (prev ? el('span', { class: 'muted small', text: 'Récord anterior: ' + prev }) : null)
-      )),
-      missed.length ? el('div', { class: 'stack tight' }, el('div', { class: 'eyebrow', text: 'Para repasar' }), el('div', { class: 'missed' }, missed.map(x => el('div', { class: 'm' }, el('b', { text: x.review.q }), el('span', { text: x.review.a }))))) : el('p', { class: 'muted', text: 'No fallaste ninguna ronda. Estas preguntas tardarán más en volver a salir.' }),
-      el('div', { class: 'row' },
-        el('button', { class: 'btn primary', type: 'button', onclick: () => startGame(def.key) }, 'Otra partida'),
-        def.key !== 'mix' ? el('button', { class: 'btn', type: 'button', onclick: () => startGame('mix') }, 'Ruleta') : null,
-        el('button', { class: 'btn ghost', type: 'button', onclick: renderHome }, 'Inicio')
-      )
+  ring.innerHTML = '<svg class="ring" viewBox="0 0 110 110" role="img" aria-label="' + pct + '% de aciertos"><circle class="track" cx="55" cy="55" r="' + r + '"></circle><circle class="val" cx="55" cy="55" r="' + r + '" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (c * (1 - pct / 100)).toFixed(1) + '"></circle><text x="55" y="65" text-anchor="middle">' + pct + '%</text></svg>';
+  const missed = s.results.filter(x => !x.ok && x.review).map(x => x.review);
+  const headline = pct === 100 ? 'Pleno.' : pct >= 80 ? 'Muy bien.' : pct >= 50 ? 'Buen avance.' : 'Primer contacto.';
+  const sub = pct === 100 ? 'Nada que objetar.' : pct >= 80 ? 'Casi todo dominado.' : pct >= 50 ? 'Repasa lo marcado.' : 'Lo fallado volverá pronto.';
+  view.append(resultShell(def.title, [
+    el('div', { class: 'summaryTop' }, ring, el('div', { class: 'summaryNums' },
+      el('div', { class: 'h2', text: headline + ' ' + sub }),
+      el('div', { class: 'muted', text: s.correct + ' de ' + s.total + ' rondas acertadas · ' + s.points + ' puntos · mejor racha ' + s.best }),
+      record ? el('span', { class: 'tag warn', text: 'Nuevo récord' }) : (prev ? el('span', { class: 'label', text: 'Récord: ' + prev }) : null)
+    )),
+    missed.length ? missedList(missed) : el('p', { class: 'muted', text: 'Sin fallos. Estas preguntas tardarán más en volver a salir.' }),
+    el('div', { class: 'row' },
+      el('button', { class: 'btn primary', type: 'button', onclick: () => startGame(def.key) }, 'Otra partida'),
+      def.key !== 'mix' ? el('button', { class: 'btn', type: 'button', onclick: () => startGame('mix') }, icon('mix', 'sm'), 'Ruleta') : null,
+      el('button', { class: 'btn text', type: 'button', onclick: renderHome }, 'Inicio')
     )
-  ));
-  if (pct >= 80) confetti();
+  ]));
   window.scrollTo({ top: 0 });
 }
 
-/* ===================== Rondas ===================== */
-function roundHeader(body, label, text) { body.append(el('div', { class: 'eyebrow', text: label }), el('h2', { class: 'q', text })); }
+function roundHeader(body, label, text) { body.append(el('div', { class: 'label', text: label }), el('h2', { class: 'q', text })); }
 function mcRound(q) {
   return {
     type: 'quiz', play: (body, shell) => new Promise(resolve => {
@@ -303,16 +388,16 @@ function mcRound(q) {
       const opts = shuffle(q.options.map((t, i) => ({ t, ok: i === q.a })));
       const list = el('div', { class: 'opts' }); const btns = [];
       opts.forEach((o, idx) => {
-        const b = el('button', { class: 'opt', type: 'button' }, el('span', { class: 'key', text: String(idx + 1) }), el('span', { text: o.t }));
+        const b = el('button', { class: 'opt', type: 'button' }, el('span', { class: 'key', text: String(idx + 1) }), el('span', { class: 'txt', text: o.t }), el('span', { class: 'mark' }));
         b.addEventListener('click', () => {
-          btns.forEach((x, j) => { x.disabled = true; if (opts[j].ok) x.classList.add('is-right'); });
-          if (!o.ok) b.classList.add('is-wrong');
+          btns.forEach((x, j) => { x.disabled = true; if (opts[j].ok) { x.classList.add('is-right'); x.querySelector('.mark').replaceChildren(icon('check', 'sm')); } });
+          if (!o.ok) { b.classList.add('is-wrong'); b.querySelector('.mark').replaceChildren(icon('x', 'sm')); }
           grade(q.id, o.ok);
           resolve({ ok: o.ok, why: q.why, review: o.ok ? null : { q: q.q, a: 'Respuesta: ' + q.options[q.a] } });
         });
         btns.push(b); list.append(b);
       });
-      body.append(list, el('p', { class: 'small muted kbHint', text: 'Atajo: pulsa 1-' + opts.length + ' para responder.' }));
+      body.append(list);
       shell.setKeys(e => { const n = parseInt(e.key, 10); if (n >= 1 && n <= btns.length && !btns[0].disabled) btns[n - 1].click(); });
     })
   };
@@ -322,17 +407,17 @@ function tfRound(t) {
     type: 'tf', play: (body, shell) => new Promise(resolve => {
       roundHeader(body, secName(t.sec), t.s);
       const list = el('div', { class: 'opts two' }); const btns = [];
-      [['Verdadero', true], ['Falso', false]].forEach(([label, val]) => {
-        const b = el('button', { class: 'opt', type: 'button', text: label });
+      [['Verdadero', true, 'V'], ['Falso', false, 'F']].forEach(([label, val, key]) => {
+        const b = el('button', { class: 'opt', type: 'button' }, el('span', { class: 'key', text: key }), el('span', { class: 'txt', text: label }), el('span', { class: 'mark' }));
         b.addEventListener('click', () => {
           btns.forEach(x => x.disabled = true); const ok = val === t.a;
-          b.classList.add(ok ? 'is-right' : 'is-wrong'); if (!ok) btns[t.a ? 0 : 1].classList.add('is-right');
+          b.classList.add(ok ? 'is-right' : 'is-wrong'); b.querySelector('.mark').replaceChildren(icon(ok ? 'check' : 'x', 'sm')); if (!ok) { const r = btns[t.a ? 0 : 1]; r.classList.add('is-right'); r.querySelector('.mark').replaceChildren(icon('check', 'sm')); }
           grade(t.id, ok);
           resolve({ ok, why: (t.a ? 'Es verdadero. ' : 'Es falso. ') + (t.why || ''), review: ok ? null : { q: t.s, a: (t.a ? 'Verdadero. ' : 'Falso. ') + (t.why || '') } });
         });
         btns.push(b); list.append(b);
       });
-      body.append(list, el('p', { class: 'small muted kbHint', text: 'Atajo: V o F.' }));
+      body.append(list);
       shell.setKeys(e => { const k = e.key.toLowerCase(); if (btns[0].disabled) return; if (k === 'v' || k === '1') btns[0].click(); if (k === 'f' || k === '2') btns[1].click(); });
     })
   };
@@ -340,7 +425,7 @@ function tfRound(t) {
 function clozeRound(c) {
   return {
     type: 'cloze', play: (body) => new Promise(resolve => {
-      body.append(el('div', { class: 'eyebrow', text: secName(c.sec) }));
+      body.append(el('div', { class: 'label', text: secName(c.sec) }));
       const parts = c.text.split('___');
       const input = el('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', 'aria-label': 'Palabra que falta', id: 'cloze-' + c.id });
       input.style.width = Math.max(8, Math.min(26, c.answer.length + 3)) + 'ch';
@@ -349,7 +434,7 @@ function clozeRound(c) {
       let hintLevel = 0; let done = false;
       const check = el('button', { class: 'btn primary', type: 'button', text: 'Comprobar' });
       const hintBtn = el('button', { class: 'btn', type: 'button', text: 'Pista' });
-      const giveUp = el('button', { class: 'btn ghost', type: 'button', text: 'No lo sé' });
+      const giveUp = el('button', { class: 'btn text', type: 'button', text: 'No lo sé' });
       const finish = (ok, typed) => {
         if (done) return; done = true; input.disabled = true; check.disabled = hintBtn.disabled = giveUp.disabled = true;
         input.classList.add(ok ? 'ok' : 'ko'); if (!ok) input.value = c.answer;
@@ -374,7 +459,7 @@ function clozeRound(c) {
 function matchRound(concepts, label) {
   return {
     type: 'match', label, play: (body) => new Promise(resolve => {
-      body.append(el('div', { class: 'eyebrow', text: 'Empareja' }), el('h2', { class: 'q', text: 'Toca un término y después su definición.' }));
+      body.append(el('div', { class: 'label', text: 'Empareja' }), el('h2', { class: 'q', text: 'Toca un término y después su definición.' }));
       const terms = shuffle(concepts); const defs = shuffle(concepts);
       const chipsWrap = el('div', { class: 'chipsWrap' }); const defsWrap = el('div', { class: 'defs' });
       let selected = null; let errors = 0; let matched = 0; const firstTry = new Map(); const chipOf = new Map();
@@ -385,7 +470,7 @@ function matchRound(concepts, label) {
           if (!selected) { toast('Primero elige un término.'); return; }
           const selId = [...chipOf].find(([, b]) => b === selected)[0];
           if (selId === k.id) {
-            selected.classList.remove('is-sel'); selected.classList.add('is-done'); d.classList.add('is-done');
+            selected.classList.remove('is-sel'); selected.classList.add('is-done'); d.classList.add('is-done'); d.prepend(icon('check', 'sm'));
             if (!firstTry.has(selId)) { firstTry.set(selId, true); grade(selId, true); }
             selected = null; matched++;
             if (matched === concepts.length) resolve({ ok: errors <= 1, msg: errors === 0 ? 'Todas emparejadas sin fallos.' : errors === 1 ? 'Emparejadas con un fallo. Vale.' : 'Emparejadas con ' + errors + ' fallos.', why: errors ? 'Los términos que confundiste volverán a salir pronto.' : '', review: errors > 1 ? { q: 'Empareja: ' + concepts.map(c => c.term).join(', '), a: 'Repasa estas definiciones en Tarjetas.' } : null });
@@ -402,10 +487,10 @@ function matchRound(concepts, label) {
 }
 function sortRound(s, maxItems) {
   return {
-    type: 'sort', label: s.title, play: (body, shell) => new Promise(resolve => {
+    type: 'sort', label: '', play: (body, shell) => new Promise(resolve => {
       const items = shuffle(s.items).slice(0, maxItems || s.items.length);
-      body.append(el('div', { class: 'eyebrow', text: secName(s.sec) }), el('h2', { class: 'q', text: s.title }));
-      const counter = el('span', { class: 'chip', text: '1/' + items.length });
+      body.append(el('div', { class: 'label', text: secName(s.sec) }), el('h2', { class: 'q', text: s.title }));
+      const counter = el('span', { class: 'counter', text: '1/' + items.length });
       const card = el('div', { class: 'itemCard' }); const cats = el('div', { class: 'cats' }); const btns = [];
       let i = 0; let hits = 0; let busy = false; const wrong = [];
       s.cats.forEach((c, ci) => { const b = el('button', { class: 'btn', type: 'button' }, el('span', { class: 'kbd', text: String(ci + 1) }), ' ', c); b.addEventListener('click', () => answer(ci)); btns.push(b); cats.append(b); });
@@ -428,11 +513,11 @@ function sortRound(s, maxItems) {
 }
 function orderRound(o) {
   return {
-    type: 'order', label: o.title, play: (body) => new Promise(resolve => {
-      body.append(el('div', { class: 'eyebrow', text: secName(o.sec) }), el('h2', { class: 'q', text: o.title }), el('p', { class: 'muted small', text: 'Toca los pasos en el orden correcto. Se irán numerando.' }));
+    type: 'order', label: '', play: (body) => new Promise(resolve => {
+      body.append(el('div', { class: 'label', text: secName(o.sec) }), el('h2', { class: 'q', text: o.title }), el('p', { class: 'muted small', text: 'Toca los pasos en orden.' }));
       const shuffled = shuffle(o.steps.map((t, i) => ({ t, i })));
       const list = el('div', { class: 'steps' }); const picked = []; const btns = [];
-      const undo = el('button', { class: 'btn ghost', type: 'button', text: 'Deshacer', disabled: true });
+      const undo = el('button', { class: 'btn text', type: 'button', disabled: true }, icon('undo', 'sm'), 'Deshacer');
       const render = () => { btns.forEach((b, idx) => { const pos = picked.indexOf(idx); b.classList.toggle('picked', pos >= 0); b.querySelector('.n').textContent = pos >= 0 ? String(pos + 1) : '·'; }); undo.disabled = !picked.length; };
       const finish = () => {
         btns.forEach(b => b.disabled = true); undo.disabled = true; let okCount = 0;
@@ -455,11 +540,11 @@ function explainRound(e) {
       const box = el('div', { class: 'stack' });
       reveal.addEventListener('click', () => {
         reveal.disabled = true; ta.readOnly = true;
-        const model = el('div', { class: 'model' }, el('div', { class: 'eyebrow', text: 'Respuesta modelo' }), el('p', { text: e.model }));
+        const model = el('div', { class: 'model' }, el('div', { class: 'label', text: 'Respuesta modelo' }), el('p', { text: e.model }));
         const rate = el('div', { class: 'rate' });
         const mk = (label, sub, cls, result) => { const b = el('button', { class: 'btn ' + cls, type: 'button' }, label, el('small', { text: sub })); b.addEventListener('click', () => { rate.querySelectorAll('button').forEach(x => x.disabled = true); grade(e.id, result); resolve({ ok: result !== false, msg: result === true ? 'Lo tenías claro.' : result === 'partial' ? 'A medias: volverá a salir.' : 'Apuntado para repasar.', why: '', review: result === true ? null : { q: e.q, a: e.model } }); }); return b; };
         rate.append(mk('Lo tenía bien', 'mismas ideas clave', 'ok', true), mk('A medias', 'me faltaba algo', '', 'partial'), mk('No lo sabía', 'o lo tenía mal', 'ko', false));
-        box.append(model, el('div', { class: 'eyebrow', text: '¿Cómo te ha ido? Sé sincero: así se ajusta el repaso.' }), rate);
+        box.append(model, el('div', { class: 'label', text: 'Valórate con sinceridad: así se ajusta el repaso.' }), rate);
         if (state.caps.sample) {
           const aiBtn = el('button', { class: 'btn', type: 'button', text: 'Pedir a Claude que valore mi respuesta' });
           const out = el('div', { class: 'aiBox', hidden: true });
@@ -485,10 +570,10 @@ function explainRound(e) {
 
 /* ===================== Tarjetas (repaso espaciado) ===================== */
 function runCards() {
-  const run = ++state.runId; const p = pack(); const view = $('#view'); view.replaceChildren();
+  const run = ++state.runId; const p = pack(); setNav('home'); const view = $('#view'); view.replaceChildren();
   const deck = pick(p.concepts, Math.min(12, p.concepts.length));
   const shell = buildShell('Tarjetas', deck.length); view.append(shell.root); window.scrollTo({ top: 0 });
-  let i = 0; let known = 0, partial = 0, missed = 0; const missedList = [];
+  let i = 0; let known = 0, partial = 0, missed = 0; const missedCards = [];
   const guard = () => { if (run !== state.runId) { shell.destroy(); return true; } return false; };
   const next = () => {
     if (guard()) return;
@@ -496,26 +581,27 @@ function runCards() {
       shell.destroy(); const prevBest = LS.get(bestKey('cards'), null); if (!prevBest || known > parseInt(prevBest, 10)) LS.set(bestKey('cards'), known + '/' + deck.length);
       const view2 = $('#view'); view2.replaceChildren();
       const dueNow = dueCount(p.concepts);
-      view2.append(el('section', { class: 'shell' }, el('div', { class: 'shell-head' }, el('div', { class: 't', text: 'Tarjetas · resultado' })),
-        el('div', { class: 'body summary' },
-          el('div', { class: 'summaryNums' }, el('div', { class: 'h', text: known === deck.length ? 'Todas sabidas.' : 'Sesión terminada.' }), el('div', { text: known + ' sabidas · ' + partial + ' a medias · ' + missed + ' por aprender' }), el('div', { class: 'muted small', text: 'Las que sabías volverán dentro de unos días; las falladas, en la próxima sesión. Tarjetas pendientes ahora mismo: ' + dueNow + '.' })),
-          missedList.length ? el('div', { class: 'stack tight' }, el('div', { class: 'eyebrow', text: 'Para repasar' }), el('div', { class: 'missed' }, missedList.map(k => el('div', { class: 'm' }, el('b', { text: k.term }), el('span', { text: k.def }))))) : null,
-          el('div', { class: 'row' }, el('button', { class: 'btn primary', type: 'button', onclick: () => startGame('cards') }, 'Otra tanda'), el('button', { class: 'btn', type: 'button', onclick: () => startGame('mix') }, 'Ruleta'), el('button', { class: 'btn ghost', type: 'button', onclick: renderHome }, 'Inicio'))
-        )));
-      if (known >= deck.length * 0.8) confetti();
+      view2.append(resultShell('Tarjetas', [
+        el('div', { class: 'summaryNums' },
+          el('div', { class: 'h2', text: known === deck.length ? 'Todas sabidas.' : 'Sesión terminada.' }),
+          el('div', { class: 'muted', text: known + ' sabidas · ' + partial + ' a medias · ' + missed + ' por aprender' }),
+          el('div', { class: 'label', text: 'Las sabidas vuelven dentro de unos días; las falladas, en la próxima sesión. Pendientes ahora: ' + dueNow + '.' })),
+        missedCards.length ? missedList(missedCards.map(k => ({ q: k.term, a: k.def }))) : null,
+        el('div', { class: 'row' }, el('button', { class: 'btn primary', type: 'button', onclick: () => startGame('cards') }, 'Otra tanda'), el('button', { class: 'btn', type: 'button', onclick: () => startGame('mix') }, icon('mix', 'sm'), 'Ruleta'), el('button', { class: 'btn text', type: 'button', onclick: renderHome }, 'Inicio'))
+      ]));
       return;
     }
     const k = deck[i]; const r = state.prog[k.id]; const box = r ? r.box : 0; const reverse = Math.random() < 0.3;
     shell.setStep(i, deck.length); shell.setScore(known * 10, 0); shell.body.replaceChildren(); shell.hideFeedback();
-    const boxes = el('div', { class: 'boxes', title: 'Caja de repaso' }); for (let b = 0; b < 5; b++) boxes.append(el('i', { class: b <= box && r ? 'on' : '' }));
-    const card = el('div', { class: 'flashCard' }, el('div', { class: 'face' }, el('div', { class: 'eyebrow', text: reverse ? 'Definición · ¿qué término es?' : 'Término · ¿cuál es su definición?' }), el('div', { class: reverse ? 'ans' : 'big', text: reverse ? k.def : k.term })));
+    const boxes = el('div', { class: 'boxes', title: 'Caja de repaso', role: 'img', 'aria-label': 'Caja ' + (r ? box + 1 : 0) + ' de 5' }); for (let b = 0; b < 5; b++) boxes.append(el('i', { class: b <= box && r ? 'on' : '' }));
+    const card = el('div', { class: 'flashCard' }, el('div', { class: 'face' }, el('div', { class: 'label', text: reverse ? 'Definición. ¿Qué término es?' : 'Término. ¿Cuál es su definición?' }), el('div', { class: reverse ? 'ans' : 'big', text: reverse ? k.def : k.term })));
     const flip = el('button', { class: 'btn primary big', type: 'button', text: 'Mostrar respuesta' });
     const rate = el('div', { class: 'rate', hidden: true });
-    const mk = (label, sub, cls, result) => { const b = el('button', { class: 'btn ' + cls, type: 'button' }, label, el('small', { text: sub })); b.addEventListener('click', () => { grade(k.id, result); if (result === true) known++; else if (result === 'partial') partial++; else { missed++; missedList.push(k); } i++; next(); }); return b; };
+    const mk = (label, sub, cls, result) => { const b = el('button', { class: 'btn ' + cls, type: 'button' }, label, el('small', { text: sub })); b.addEventListener('click', () => { grade(k.id, result); if (result === true) known++; else if (result === 'partial') partial++; else { missed++; missedCards.push(k); } i++; next(); }); return b; };
     rate.append(mk('No la sabía', 'vuelve enseguida', 'ko', false), mk('Casi', 'me faltaba algo', '', 'partial'), mk('La sabía', 'sube de caja', 'ok', true));
-    flip.addEventListener('click', () => { card.classList.add('flipped'); card.replaceChildren(el('div', { class: 'face' }, el('div', { class: 'eyebrow', text: reverse ? k.term : 'Definición' }), el('div', { class: reverse ? 'big' : 'ans', text: reverse ? k.term : k.def }))); flip.hidden = true; rate.hidden = false; });
+    flip.addEventListener('click', () => { card.classList.add('flipped'); card.replaceChildren(el('div', { class: 'face' }, el('div', { class: 'label', text: reverse ? k.term : 'Definición' }), el('div', { class: reverse ? 'big' : 'ans', text: reverse ? k.term : k.def }))); flip.hidden = true; rate.hidden = false; });
     shell.setKeys(e => { if (e.key === ' ' || e.key === 'Enter') { if (!flip.hidden) { e.preventDefault(); flip.click(); } } else if (!rate.hidden) { const n = parseInt(e.key, 10); const bs = rate.querySelectorAll('button'); if (n >= 1 && n <= 3) bs[n - 1].click(); } });
-    shell.body.append(el('div', { class: 'row between' }, el('span', { class: 'eyebrow', text: secName(k.sec) }), boxes), el('div', { class: 'flash' }, card), el('div', { class: 'row' }, flip), rate, el('p', { class: 'small muted' }, 'Intenta recordarlo de verdad antes de mostrar la respuesta: ese esfuerzo es lo que fija la memoria. ', el('span', { class: 'kbHint', text: 'Atajos: espacio para girar, 1-3 para valorar.' })));
+    shell.body.append(el('div', { class: 'row between' }, el('span', { class: 'label', text: secName(k.sec) }), boxes), card, el('div', { class: 'row' }, flip), rate);
   };
   next();
 }
@@ -570,32 +656,19 @@ function conceptMcRound(k, p) {
   return mcRound(q);
 }
 
-/* ===================== Confeti ===================== */
-function confetti() {
-  if (reducedMotion()) return;
-  const c = $('#confetti'); const ctx = c.getContext('2d'); if (!ctx) return;
-  c.hidden = false; c.width = innerWidth; c.height = innerHeight;
-  const colors = [getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), getComputedStyle(document.documentElement).getPropertyValue('--amber').trim(), getComputedStyle(document.documentElement).getPropertyValue('--good').trim()];
-  const parts = Array.from({ length: 90 }, () => ({ x: Math.random() * c.width, y: -20 - Math.random() * 100, vx: (Math.random() - .5) * 3, vy: 2 + Math.random() * 3, s: 6 + Math.random() * 6, r: Math.random() * Math.PI, col: colors[Math.floor(Math.random() * colors.length)] }));
-  const t0 = performance.now();
-  const tick = (t) => { ctx.clearRect(0, 0, c.width, c.height); for (const p of parts) { p.x += p.vx; p.y += p.vy; p.r += .1; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.col; ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.restore(); } if (t - t0 < 1800) requestAnimationFrame(tick); else { ctx.clearRect(0, 0, c.width, c.height); c.hidden = true; } };
-  requestAnimationFrame(tick);
-}
-
 /* ===================== Por qué estos juegos ===================== */
 function renderWhy() {
-  state.runId++; leaveGame(); const view = $('#view'); view.replaceChildren();
+  state.runId++; leaveGame(); setNav('why'); const view = $('#view'); view.replaceChildren();
   const link = (href, text) => el('a', { href, target: '_blank', rel: 'noopener' }, text);
-  const P = (g, title, body) => el('div', { class: 'principle' }, el('div', { class: 'g', text: g }), el('h3', { text: title }), el('p', { text: body }));
+  const P = (g, title, body) => el('section', { class: 'principle' }, el('div', { class: 'label', text: g }), el('h3', { text: title }), el('p', { text: body }));
   view.append(el('div', { class: 'prose' },
-    el('p', { class: 'eyebrow', text: 'Diseño basado en evidencia' }),
-    el('h1', { text: '¿Por qué estos juegos y no otros?' }),
+    el('h1', { text: 'Por qué estos juegos' }),
     el('p', { text: 'Los juegos de esta web no están elegidos por ser divertidos sin más. Cada uno aplica una técnica de estudio que la investigación en psicología cognitiva ha comparado una y otra vez con releer o subrayar, y que sale ganando. Esta es la lista corta.' }),
     el('h2', { text: 'Lo que dice la investigación' }),
     P('Test rápido · Verdadero o falso · Ruleta', 'Práctica de recuperación', 'Recordar algo de memoria fija más que volver a leerlo. Un metaanálisis de 2017 con más de 200 estudios (Adesope, Trevisan y Sundararajan) encontró que hacerse preguntas gana a releer de forma consistente, en aula y en laboratorio, y sobre todo cuando el examen es días después. Dunlosky y colaboradores (2013) la clasificaron como una de las dos únicas técnicas de utilidad alta. Por eso aquí no hay modo lectura: todo es pregunta.'),
     P('Test rápido · Verdadero o falso', 'Feedback inmediato con explicación', 'Las opciones de un test pueden colarte ideas falsas si eliges mal y nadie te corrige (Marsh y otros, 2007). Con corrección después de cada respuesta ese riesgo desaparece y el aprendizaje mejora (Butler y Roediger, 2008; Kang y otros, 2007). Cada pregunta de esta web muestra la respuesta correcta y un porqué.'),
     P('Completa el hueco · Tarjetas', 'Efecto de generación y recuerdo libre', 'Producir la respuesta uno mismo deja más huella que reconocerla entre opciones. El metaanálisis de Bertsch y otros (2007) estima ese efecto en d ≈ 0,40, y Kang y otros (2007) vieron que las preguntas de respuesta corta con feedback rendían mejor que el tipo test a una semana vista. Por eso hay un juego en el que escribes la palabra, y en Tarjetas intentas recordar antes de girar.'),
-    P('Tarjetas · Para repasar hoy', 'Práctica distribuida (repaso espaciado)', 'Repartir el estudio en varios días retiene mucho más que concentrarlo. Cepeda y otros (2006) lo confirmaron en 317 experimentos y vieron que el hueco óptimo entre repasos crece cuanto más lejos está el examen. Aquí cada elemento vive en una caja tipo Leitner: si lo aciertas vuelve a los 1, 3, 7 o 14 días; si lo fallas vuelve al día siguiente. Todos los juegos comparten ese calendario.'),
+    P('Tarjetas · Para repasar hoy', 'Práctica distribuida (repaso espaciado)', 'Repartir el estudio en varios días retiene mucho más que concentrarlo. Cepeda y otros (2006) lo confirmaron en 317 experimentos y vieron que el hueco óptimo entre repasos crece cuanto más lejos está el examen. Aquí cada elemento vive en una caja tipo Leitner: si lo aciertas vuelve a los 1, 3, 7 o 14 días; si lo fallas vuelve al día siguiente. Todos los juegos comparten ese calendario, y el porcentaje de dominio de la portada sube cuando aciertas un elemento varias veces en días distintos y baja cuando lo fallas.'),
     P('Clasifica · Empareja · Ruleta', 'Intercalado', 'Mezclar categorías parecidas en vez de estudiarlas en bloque mejora la capacidad de distinguirlas. Brunmair y Richter (2019) midieron un efecto medio de g = 0,42 en 238 comparaciones, mayor cuanto más se confunden las categorías entre sí (IMAP y POP3, cita y reunión). Yan y Sana (2021) comprobaron que el beneficio aparece en la mayoría de las personas aunque casi nadie lo intuya. La Ruleta mezcla además tipos de pregunta y secciones.'),
     P('Explícalo', 'Interrogación elaborativa y autoexplicación', 'Responder a un porqué con tus palabras obliga a conectar la idea con lo que ya sabes. Dunlosky y otros (2013) la valoran como técnica de utilidad moderada, útil sobre todo para contenido factual como este tema. Comparar con la respuesta modelo y, si quieres, pedir a Claude que la valore, cierra el ciclo con feedback.'),
     P('Ordena los pasos', 'Conocimiento procedimental', 'Los casos prácticos del tema son secuencias (crear una cuenta, configurar POP3, exportar un PST). Reconstruir el orden es una forma de recuperación que además encaja con cómo se evalúan estos procedimientos en clase.'),
@@ -619,25 +692,28 @@ function renderWhy() {
   window.scrollTo({ top: 0 });
 }
 
-/* ===================== Gestionar temas ===================== */
+/* ===================== Temas ===================== */
 function renderPacks() {
-  state.runId++; leaveGame(); const view = $('#view'); view.replaceChildren();
-  const list = el('div', { class: 'stack' });
+  state.runId++; leaveGame(); setNav('packs'); const view = $('#view'); view.replaceChildren();
+  const list = el('div', { class: 'packs' });
   for (const p of state.packs) {
-    const counts = p.questions.length + ' test · ' + p.tf.length + ' V/F · ' + p.cloze.length + ' huecos · ' + p.concepts.length + ' conceptos · ' + p.sort.length + ' clasif. · ' + p.order.length + ' secuencias · ' + p.explain.length + ' porqués';
+    const counts = p.questions.length + ' test · ' + p.tf.length + ' V/F · ' + p.cloze.length + ' huecos · ' + p.concepts.length + ' conceptos · ' + p.sort.length + ' clasificaciones · ' + p.order.length + ' secuencias · ' + p.explain.length + ' porqués';
     const actions = el('div', { class: 'row' });
-    const row = el('div', { class: 'card packRow' }, el('div', { class: 'stack tight' }, el('b', { text: p.title }), el('span', { class: 'counts', text: counts }), p.id === state.packId ? el('span', { class: 'tag', text: 'Tema activo' }) : null), actions);
-    actions.append(el('button', { class: 'btn small', type: 'button', onclick: () => { setPack(p.id); renderHome(); } }, 'Jugar'));
+    const row = el('div', { class: 'packRow' }, el('div', { class: 'stack tight' }, el('b', { text: p.title }), el('span', { class: 'counts', text: counts }), p.id === state.packId ? el('span', { class: 'tag', text: 'Tema activo' }) : null), actions);
+    if (p.id !== state.packId) actions.append(el('button', { class: 'btn small', type: 'button', onclick: () => { setPack(p.id); renderHome(); } }, 'Estudiar'));
     actions.append(el('button', { class: 'btn small', type: 'button', onclick: () => exportPack(p, row) }, 'Exportar JSON'));
     const confirmBtn = (label, cls, fn) => { const b = el('button', { class: 'btn small ' + cls, type: 'button', text: label }); let armed = false; b.addEventListener('click', () => { if (!armed) { armed = true; b.textContent = '¿Seguro? Pulsa otra vez'; setTimeout(() => { armed = false; b.textContent = label; }, 3000); } else fn(); }); return b; };
-    actions.append(confirmBtn('Reiniciar progreso', 'ghost', () => { LS.del('ra.prog.' + p.id); if (p.id === state.packId) loadProg(); toast('Progreso reiniciado.'); renderPacks(); }));
-    if (!p.builtin) actions.append(confirmBtn('Eliminar', 'danger', () => { state.packs = state.packs.filter(x => x.id !== p.id); saveCustomPacks(); LS.del('ra.prog.' + p.id); if (state.packId === p.id) setPack(state.packs[0].id); fillPackSelect(); toast('Tema eliminado.'); renderPacks(); }));
+    actions.append(confirmBtn('Reiniciar progreso', 'text', () => { LS.del('ra.prog.' + p.id); if (p.id === state.packId) loadProg(); toast('Progreso reiniciado.'); renderPacks(); }));
+    if (!p.builtin) actions.append(confirmBtn('Eliminar', 'text danger', () => { state.packs = state.packs.filter(x => x.id !== p.id); saveCustomPacks(); LS.del('ra.prog.' + p.id); if (state.packId === p.id) setPack(state.packs[0].id); toast('Tema eliminado.'); renderPacks(); }));
     list.append(row);
   }
-  view.append(el('div', { class: 'stack' }, el('p', { class: 'eyebrow', text: 'Temas' }), el('h1', { text: 'Gestionar temas' }), el('p', { class: 'muted', text: 'Los temas y tu progreso se guardan en este navegador. Exporta un tema en JSON para llevártelo a otro dispositivo o compartirlo; se importa desde Añadir tema.' }), list,
-    el('div', { class: 'row' }, el('button', { class: 'btn primary', type: 'button', onclick: renderAdd }, 'Añadir tema'), el('button', { class: 'btn ghost', type: 'button', onclick: renderHome }, 'Inicio'))));
+  view.append(el('div', { class: 'page' },
+    el('div', { class: 'h' }, el('h1', { text: 'Temas' }), el('button', { class: 'btn primary', type: 'button', onclick: renderAdd }, icon('plus', 'sm'), 'Añadir tema')),
+    el('p', { class: 'muted', text: 'Los temas y tu progreso se guardan en este navegador. Exporta un tema en JSON para llevártelo a otro dispositivo; se importa desde Añadir tema.' }),
+    list));
   window.scrollTo({ top: 0 });
 }
+
 async function exportPack(p, row) {
   const clean = Object.assign({}, p); delete clean.builtin; const json = JSON.stringify(clean, null, 1);
   if (state.caps.downloads) {
@@ -659,12 +735,12 @@ const GEN_SIZES = {
 };
 const MAX_TEXT = 110000;
 function renderAdd() {
-  state.runId++; leaveGame(); const view = $('#view'); view.replaceChildren();
+  state.runId++; leaveGame(); setNav('packs'); const view = $('#view'); view.replaceChildren();
   const st = { mode: 'pdf', text: '', title: '', method: state.caps.sample ? 'claude' : 'auto', size: 'm', json: null };
   const log = el('div', { class: 'log' }); const preview = el('div', { class: 'preview', hidden: true });
   const titleInput = el('input', { class: 'text', type: 'text', placeholder: 'Título del tema (por ejemplo: Tema 3. Hojas de cálculo)', id: 'packTitle', 'aria-label': 'Título del tema' });
   const srcBox = el('div', { class: 'stack' });
-  const step2 = el('div', { class: 'card stack', hidden: true });
+  const step2 = el('div', { class: 'block stack', hidden: true });
   const status = el('div', { class: 'prog' });
   const setText = (text, suggestedTitle) => {
     st.text = text.replace(/\s+\n/g, '\n').trim();
@@ -722,7 +798,7 @@ function renderAdd() {
   const sizes = el('div', { class: 'sizes' });
   Object.entries(GEN_SIZES).forEach(([k, v]) => { const b = el('button', { class: 'btn small' + (st.size === k ? ' on' : ''), type: 'button', text: v.label }); b.addEventListener('click', () => { st.size = k; sizes.querySelectorAll('.btn').forEach(x => x.classList.remove('on')); b.classList.add('on'); }); sizes.append(b); });
   const go = el('button', { class: 'btn primary big', type: 'button', text: 'Crear los juegos' });
-  const stop = el('button', { class: 'btn ghost', type: 'button', text: 'Cancelar', hidden: true });
+  const stop = el('button', { class: 'btn text', type: 'button', text: 'Cancelar', hidden: true });
   let ctl = null;
   stop.addEventListener('click', () => { if (ctl) ctl.abort(); });
   go.addEventListener('click', async () => {
@@ -743,13 +819,13 @@ function renderAdd() {
       line.className = 'notice bad'; line.textContent = msg;
     } finally { go.disabled = false; stop.hidden = true; ctl = null; }
   });
-  step2.append(el('div', { class: 'eyebrow', text: '2 · Título y método' }), titleInput, radios, el('div', { class: 'row' }, el('span', { class: 'small muted', text: 'Cantidad de preguntas:' }), sizes), el('div', { class: 'row' }, go, stop), status);
-  view.append(el('div', { class: 'stack' },
-    el('p', { class: 'eyebrow', text: 'Añadir tema' }), el('h1', { text: 'Convierte otro PDF en juegos' }),
-    el('p', { class: 'muted', text: 'Sube el PDF de otro tema (o pega su texto) y la web creará un banco de preguntas nuevo con los mismos ocho juegos y su propio repaso espaciado.' }),
-    el('div', { class: 'card stack' }, el('div', { class: 'eyebrow', text: '1 · Fuente' }), tabs, srcBox, log, preview),
+  step2.append(el('h2', { text: '2. Título y método' }), titleInput, radios, el('div', { class: 'row' }, el('span', { class: 'small muted', text: 'Cantidad de preguntas:' }), sizes), el('div', { class: 'row' }, go, stop), status);
+  view.append(el('div', { class: 'page' },
+    el('h1', { text: 'Añadir tema' }),
+    el('p', { class: 'muted', text: 'Sube un PDF o pega su texto. La web crea un banco de preguntas nuevo con los mismos juegos y su propio repaso.' }),
+    el('div', { class: 'block stack' }, el('h2', { text: '1. Fuente' }), tabs, srcBox, log, preview),
     step2,
-    el('div', { class: 'row' }, el('button', { class: 'btn ghost', type: 'button', onclick: renderHome }, 'Volver'))
+    el('div', { class: 'row' }, el('button', { class: 'btn text', type: 'button', onclick: renderPacks }, icon('back', 'sm'), 'Volver a temas'))
   ));
   window.scrollTo({ top: 0 });
 }
@@ -885,7 +961,8 @@ function spread(arr, n) { if (arr.length <= n) return arr.slice(); const out = [
 
 /* ===================== Arranque ===================== */
 function boot() {
-  loadState(); fillPackSelect(); renderHome();
+  applyTheme(); loadState(); renderHome();
+  if (window.matchMedia) { const mq = window.matchMedia('(prefers-color-scheme: dark)'); const onChange = () => { if (theme.mode === 'system') applyTheme(); }; if (mq.addEventListener) mq.addEventListener('change', onChange); else if (mq.addListener) mq.addListener(onChange); }
   const useCap = async (name) => { try { if (!window.claude || typeof window.claude.use !== 'function') return null; return await window.claude.use(name); } catch { return null; } };
   state.capsReady = Promise.all([
     useCap('sample').then(fn => { state.caps.sample = fn || null; }),
