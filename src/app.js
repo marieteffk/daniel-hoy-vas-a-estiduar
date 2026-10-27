@@ -87,8 +87,8 @@ function normalizePack(raw) {
 }
 function loadState() {
   const custom = LS.get('ra.packs', []);
-  // Temas incluidos de serie, en orden; el Tema 2 sigue siendo el de partida para quien no ha elegido otro.
-  const builtins = [PACK_TEMA0, PACK_TEMA1, PACK_TEMA2].map(normalizePack).filter(Boolean);
+  // Temas incluidos de serie, en orden (los de electricidad y después el de Sistemas Operativos); el Tema 2 sigue siendo el de partida para quien no ha elegido otro.
+  const builtins = [PACK_TEMA0, PACK_TEMA1, PACK_TEMA2, PACK_SO_TEMA1].map(normalizePack).filter(Boolean);
   state.packs = [...builtins, ...custom.map(normalizePack).filter(p => p && !builtins.some(b => b.id === p.id))];
   state.packId = LS.get('ra.packId', PACK_TEMA2.id);
   if (!state.packs.find(p => p.id === state.packId)) state.packId = state.packs[0].id;
